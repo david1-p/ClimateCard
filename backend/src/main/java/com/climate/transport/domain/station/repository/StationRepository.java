@@ -1,0 +1,17 @@
+package com.climate.transport.domain.station.repository;
+
+import com.climate.transport.domain.station.entity.Station;
+import org.locationtech.jts.geom.Point;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+public interface StationRepository extends JpaRepository<Station, String> {
+
+    @Query(value = "SELECT * FROM stations s " +
+            "WHERE ST_DWithin(s.location::geography, ST_SetSRID(:point, 4326)::geography, :radius) " +
+            "ORDER BY ST_Distance(s.location::geography, ST_SetSRID(:point, 4326)::geography)", nativeQuery = true)
+    List<Station> findStationsWithinRadius(@Param("point") Point point, @Param("radius") double radius);
+}

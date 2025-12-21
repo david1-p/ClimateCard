@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: climate-transport-card
+
+  profiles:
+    active: ${PROFILE:dev}
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:climate_transport_dev}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
+        format_sql: true
+        use_sql_comments: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 기본 TTL 10분 (밀리초)
+      cache-null-values: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+# 공공 API 설정
+public-api:
+  service-key: ${PUBLIC_API_SERVICE_KEY}
+  base-url: http://ws.bus.go.kr/api/rest
+  connect-timeout: 5000
+  read-timeout: 10000
+  max-retries: 3
+  retry-delay: 1000
+
+# 서울열린데이터광장 API 설정
+seoul-api:
+  service-key: ${SEOUL_API_KEY}
+  base-url: http://openapi.seoul.go.kr:8088
+  connect-timeout: 5000
+  read-timeout: 10000
+  
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,caches
+  endpoint:
+    health:
+      show-details: when-authorized
+    caches:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    com.climate.transport: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.web: INFO

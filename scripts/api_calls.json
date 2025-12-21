@@ -1,0 +1,9 @@
+[
+  {
+    "method": "GET",
+    "url": "https://bus.go.kr/app/resources/sass/arsInfo.css",
+    "status": 200,
+    "contentType": "text/css;charset=UTF-8",
+    "preview": null
+  }
+]
