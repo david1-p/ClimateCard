@@ -6,6 +6,7 @@ import com.climate.transport.integration.seoul.SeoulStationSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -19,6 +20,8 @@ public class AdminController {
     private final StationSyncService stationSyncService;
     private final RouteSyncService routeSyncService;
     private final SeoulStationSyncService seoulStationSyncService;
+    private final com.climate.transport.batch.processor.ClimateCardExcelImporter climateCardExcelImporter;
+    private final com.climate.transport.domain.route.repository.RouteRepository routeRepository;
 
     /**
      * 정류소 데이터 동기화
@@ -78,6 +81,36 @@ public class AdminController {
                     "message", "서울시 정류소 동기화 완료"));
         } catch (Exception e) {
             log.error("Seoul station sync failed", e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "error", e.getMessage()));
+        }
+    }
+
+    /**
+     * 기후동행카드 적용 노선 재설정
+     * 1. 모든 노선을 false로 초기화
+     * 2. 엑셀 파일을 읽어서 적용 노선만 true로 업데이트
+     */
+    @PostMapping("/reset-climate-card")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> resetClimateCardEligibility() {
+        log.info("Resetting climate card eligibility for all routes");
+        try {
+            // 1. 모든 노선을 false로 초기화
+            int totalRoutes = routeRepository.findAll().size();
+            routeRepository.findAll().forEach(route -> route.updateClimateCardEligible(false));
+            log.info("Reset {} routes to ineligible", totalRoutes);
+
+            // 2. 엑셀 파일로 업데이트
+            climateCardExcelImporter.importExcel();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "기후동행카드 적용 여부 재설정 완료",
+                    "totalRoutes", totalRoutes));
+        } catch (Exception e) {
+            log.error("Failed to reset climate card eligibility", e);
             return ResponseEntity.internalServerError().body(Map.of(
                     "success", false,
                     "error", e.getMessage()));

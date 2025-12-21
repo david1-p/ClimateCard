@@ -19,7 +19,7 @@ import java.util.Optional;
 public class ClimateCardExcelImporter {
 
     private final RouteRepository routeRepository;
-    private static final String EXCEL_FILE_PATH = "../1._기후동행카드_적용_노선_전체_목록(버스_및_지하철).xlsx";
+    private static final String EXCEL_FILE_PATH = "data/1._기후동행카드_적용_노선_전체_목록(버스_및_지하철).xlsx";
 
     @Transactional
     public void importExcel() {
@@ -36,38 +36,47 @@ public class ClimateCardExcelImporter {
             Sheet sheet = workbook.getSheetAt(0); // 첫 번째 시트 사용
             log.info("Starting Excel Import. Total Rows: {}", sheet.getPhysicalNumberOfRows());
 
-            // 헤더 찾기 (노선명, 노선번호 등)
-            // 실제 파일 구조를 모르므로, 2번째 줄(Index 1)부터 데이터라고 가정하고
-            // 첫 번째 문자열 셀을 찾아 처리하거나, 전체를 순회하며 "노선" 키워드를 찾음
+            int processedCount = 0;
+            int updatedCount = 0;
 
+            // 첫 번째 행은 헤더이므로 스킵
             for (Row row : sheet) {
-                if (row.getRowNum() < 2)
-                    continue; // 헤더 스킵 (임의 설정)
+                if (row.getRowNum() == 0)
+                    continue; // 헤더 스킵
 
-                String routeName = getCellValue(row, 1); // B열 가정 (노선명)
-                // 만약 B열이 아니라면 로직 수정 필요. 일단 구현.
+                // B열(index 1): 노선번호
+                // P열(index 15): 기후동행카드 적용여부 (O/X)
+                String routeName = getCellValue(row, 1);
+                String eligible = getCellValue(row, 15);
 
-                if (routeName != null && !routeName.isBlank()) {
-                    updateRouteEligibility(routeName.trim());
+                if (routeName != null && !routeName.isBlank() && "O".equals(eligible)) {
+                    boolean updated = updateRouteEligibility(routeName.trim());
+                    processedCount++;
+                    if (updated) {
+                        updatedCount++;
+                    }
                 }
             }
+
+            log.info("Excel Import Complete. Processed: {}, Updated: {}", processedCount, updatedCount);
 
         } catch (Exception e) {
             log.error("Failed to import Excel file", e);
         }
     }
 
-    private void updateRouteEligibility(String routeName) {
+    private boolean updateRouteEligibility(String routeName) {
         // DB에서 노선 조회 (이름으로)
         Optional<Route> routeOpt = routeRepository.findByRouteName(routeName);
         if (routeOpt.isPresent()) {
             Route route = routeOpt.get();
             route.updateClimateCardEligible(true);
-            log.info("Marked route as eligible: {}", routeName);
+            log.debug("Marked route as eligible: {}", routeName);
+            return true;
         } else {
-            // DB에 없으면, 일단 생성해두거나 스킵.
-            // 여기서는 스킵하고 로그만 남김 (공공 API 동기화가 선행되어야 함)
+            // DB에 없으면 스킵 (공공 API 동기화가 선행되어야 함)
             log.debug("Route not found in DB: {}", routeName);
+            return false;
         }
     }
 

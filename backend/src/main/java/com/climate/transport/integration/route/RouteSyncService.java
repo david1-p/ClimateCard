@@ -59,8 +59,8 @@ public class RouteSyncService {
     }
 
     private boolean checkClimateCardEligibility(String routeName) {
-        // TODO: 기후동행카드 적용 노선 목록(Excel 등)과 대조 로직 필요
-        // 임시로 간선/지선/마을버스만 true로 가정
-        return true;
+        // 기본값은 false (미적용)
+        // 엑셀 파일에서 명시적으로 적용 노선만 true로 업데이트됨
+        return false;
     }
 }
