@@ -40,21 +40,21 @@
 
 ```mermaid
 graph TB
-    subgraph "클라이언트"
+    subgraph Client["클라이언트 (Client)"]
         A[사용자 브라우저]
         B[React 18 + TypeScript]
     end
-    
-    subgraph "서버 사이드"
-        C[Nginx (Reverse Proxy)]
+
+    subgraph Server["서버 사이드 (Server)"]
+        C[Nginx Reverse Proxy]
         D[Spring Boot Backend]
     end
-    
-    subgraph "데이터 스토어"
-        E[Redis (Cache)]
-        F[PostgreSQL (Main DB)]
+
+    subgraph DataStore["데이터 스토어 (Data Store)"]
+        E[Redis Cache]
+        F[PostgreSQL Main DB]
     end
-    
+
     A --> C
     C --> D
     D --> E
@@ -93,24 +93,24 @@ ORDER BY ST_Distance(location, ST_MakePoint(:lng, :lat)::geography);
 erDiagram
     ROUTES ||--o{ ROUTE_STATIONS : contains
     STATIONS ||--o{ ROUTE_STATIONS : has
-    
+
     ROUTES {
-        string route_id PK "노선 ID"
-        string route_name "노선명 (예: 150)"
-        string route_type "유형 (BUS, SUBWAY)"
-        boolean climate_card_eligible "적용 여부"
+        string route_id PK "Route ID"
+        string route_name "Route Name"
+        string route_type "Type BUS or SUBWAY"
+        boolean climate_card_eligible "Climate Card Eligible"
     }
-    
+
     STATIONS {
-        string station_id PK "정류소 ID"
-        string station_name "정류소명"
-        geography location "위치 좌표"
+        string station_id PK "Station ID"
+        string station_name "Station Name"
+        geography location "GPS Location"
     }
-    
+
     ROUTE_STATIONS {
-        string route_id FK
-        string station_id FK
-        int sequence "순번"
+        string route_id FK "Route ID"
+        string station_id FK "Station ID"
+        int sequence "Sequence Number"
     }
 ```
 
