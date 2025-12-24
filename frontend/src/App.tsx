@@ -5,8 +5,10 @@ import { stationApi } from "./api/station";
 import { routeApi } from "./api/route";
 import { arrivalApi } from "./api/arrival";
 import type { Station, Route, BusArrival } from "./types/index";
+import { logger } from "./utils/logger";
 
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.9780 };
+const DEFAULT_SEARCH_RADIUS = 2000;  // 주변 정류장 검색 반경 (미터)
 
 function App() {
   const appKey = import.meta.env.VITE_KAKAO_APP_KEY;
@@ -42,10 +44,10 @@ function App() {
           };
           setCenter(newPos); // 현재 위치로 지도 중심 이동
           setUserLocation(newPos);
-          console.log(`📍 User location: ${newPos.lat}, ${newPos.lng}`);
+          logger.log(`📍 User location: ${newPos.lat}, ${newPos.lng}`);
         },
         (err) => {
-          console.error("Geolocation error:", err);
+          logger.error("Geolocation error:", err);
           // 위치 권한 거부 시 서울 시청으로 유지
         }
       );
@@ -54,15 +56,15 @@ function App() {
 
   // 지도 중심 변경 시 주변 정류소 조회
   const fetchNearbyStations = async (lat: number, lng: number) => {
-    console.log(`🔍 Fetching stations near: ${lat}, ${lng}`);
+    logger.log(`🔍 Fetching stations near: ${lat}, ${lng}`);
     setStationsLoading(true);
     setErrorMessage(null);
     try {
-      const data = await stationApi.getNearbyStations(lat, lng, 2000);
-      console.log(`✅ Found ${data.length} stations:`, data);
+      const data = await stationApi.getNearbyStations(lat, lng, DEFAULT_SEARCH_RADIUS);
+      logger.log(`✅ Found ${data.length} stations:`, data);
       setStations(data);
     } catch (err) {
-      console.error("❌ Failed to fetch stations:", err);
+      logger.error("❌ Failed to fetch stations:", err);
       setErrorMessage("정류장 정보를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.");
       setStations([]);
     } finally {
@@ -77,7 +79,7 @@ function App() {
 
   // 정류소 선택 시 노선 및 도착 정보 조회
   const handleStationClick = async (station: Station) => {
-    console.log(`🚏 Station clicked:`, station);
+    logger.log(`🚏 Station clicked:`, station);
     setSelectedStation(station);
     setRoutesLoading(true);
     setArrivalsLoading(true);
@@ -90,13 +92,13 @@ function App() {
         arrivalApi.getArrivalsByStation(station.stationId)
       ]);
 
-      console.log(`🚌 Routes for ${station.stationName}:`, routesData);
-      console.log(`⏰ Arrivals for ${station.stationName}:`, arrivalsData);
+      logger.log(`🚌 Routes for ${station.stationName}:`, routesData);
+      logger.log(`⏰ Arrivals for ${station.stationName}:`, arrivalsData);
 
       setRoutes(routesData);
       setArrivals(arrivalsData);
     } catch (err) {
-      console.error("❌ Failed to fetch station info:", err);
+      logger.error("❌ Failed to fetch station info:", err);
       setErrorMessage("정류소 정보를 불러오는데 실패했습니다. 다시 시도해주세요.");
       setRoutes([]);
       setArrivals([]);
@@ -111,7 +113,7 @@ function App() {
     const latlng = map.getCenter();
     const newCenter = { lat: latlng.getLat(), lng: latlng.getLng() };
     setCenter(newCenter);
-    console.log('🗺️ Map center moved to:', newCenter);
+    logger.log('🗺️ Map center moved to:', newCenter);
   };
 
   // 노선 검색
@@ -125,10 +127,10 @@ function App() {
     setIsSearching(true);
     try {
       const data = await routeApi.searchRoutes(keyword);
-      console.log(`🔍 Search results for "${keyword}":`, data);
+      logger.log(`🔍 Search results for "${keyword}":`, data);
       setSearchResults(data);
     } catch (err) {
-      console.error("❌ Failed to search routes:", err);
+      logger.error("❌ Failed to search routes:", err);
       setSearchResults([]);
     }
   };
@@ -163,23 +165,29 @@ function App() {
         center={center}
         style={{ width: "100%", height: "100%" }}
         level={3}
+        isPanto={false}
         onDragEnd={handleDragEnd}
         ref={mapRef}
       >
         {userLocation && (
-          <MapMarker position={userLocation} image={{
-            src: "/marker.png",
-            size: { width: 40, height: 60 },
-          }} />
+          <MapMarker
+            position={{ lat: userLocation.lat, lng: userLocation.lng }}
+            image={{
+              src: "/marker.png",
+              size: { width: 40, height: 60 },
+            }}
+          />
         )}
 
         {/* 주변 정류소 마커 */}
         {stations.map((station) => (
           <MapMarker
-            key={station.stationId}
-            position={{ lat: station.latitude, lng: station.longitude }}
+            key={`station-${station.stationId}`}
+            position={{ lat: Number(station.latitude), lng: Number(station.longitude) }}
             title={station.stationName}
             onClick={() => handleStationClick(station)}
+            clickable={true}
+            zIndex={1}
           />
         ))}
       </Map>

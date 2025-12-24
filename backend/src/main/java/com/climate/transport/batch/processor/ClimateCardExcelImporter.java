@@ -1,5 +1,6 @@
 package com.climate.transport.batch.processor;
 
+import com.climate.transport.api.validation.ValidationConstants;
 import com.climate.transport.domain.route.entity.Route;
 import com.climate.transport.domain.route.repository.RouteRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,45 +12,49 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Optional;
 
+/**
+ * 기후동행카드 적용 노선 엑셀 임포터
+ * 엑셀 파일에서 기후동행카드 적용 노선 목록을 읽어서 DB 업데이트
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ClimateCardExcelImporter {
 
     private final RouteRepository routeRepository;
-    private static final String EXCEL_FILE_PATH = "data/1._기후동행카드_적용_노선_전체_목록(버스_및_지하철).xlsx";
+    private static final int HEADER_ROW_INDEX = 0;
 
     @Transactional
     public void importExcel() {
-        File file = new File(EXCEL_FILE_PATH);
+        File file = new File(ValidationConstants.CLIMATE_CARD_EXCEL_PATH);
+
         if (!file.exists()) {
-            // Docker 환경 등을 고려하여 절대 경로 또는 다른 경로 시도 가능성을 열어둠
-            log.warn("Excel file not found at: {}", file.getAbsolutePath());
-            return;
+            log.warn("엑셀 파일을 찾을 수 없습니다: {}", file.getAbsolutePath());
+            throw new IllegalStateException("기후동행카드 노선 목록 엑셀 파일이 존재하지 않습니다");
         }
 
         try (FileInputStream fis = new FileInputStream(file);
-                Workbook workbook = new XSSFWorkbook(fis)) {
+             Workbook workbook = new XSSFWorkbook(fis)) {
 
-            Sheet sheet = workbook.getSheetAt(0); // 첫 번째 시트 사용
-            log.info("Starting Excel Import. Total Rows: {}", sheet.getPhysicalNumberOfRows());
+            Sheet sheet = workbook.getSheetAt(0);
+            log.info("엑셀 임포트 시작 - 총 행 수: {}", sheet.getPhysicalNumberOfRows());
 
             int processedCount = 0;
             int updatedCount = 0;
 
-            // 첫 번째 행은 헤더이므로 스킵
             for (Row row : sheet) {
-                if (row.getRowNum() == 0)
-                    continue; // 헤더 스킵
+                // 헤더 행 스킵
+                if (row.getRowNum() == HEADER_ROW_INDEX) {
+                    continue;
+                }
 
-                // B열(index 1): 노선번호
-                // P열(index 15): 기후동행카드 적용여부 (O/X)
-                String routeName = getCellValue(row, 1);
-                String eligible = getCellValue(row, 15);
+                String routeName = getCellValue(row, ValidationConstants.EXCEL_ROUTE_NAME_COLUMN);
+                String eligible = getCellValue(row, ValidationConstants.EXCEL_ELIGIBLE_COLUMN);
 
-                if (routeName != null && !routeName.isBlank() && "O".equals(eligible)) {
+                if (isEligibleRoute(routeName, eligible)) {
                     boolean updated = updateRouteEligibility(routeName.trim());
                     processedCount++;
                     if (updated) {
@@ -58,11 +63,24 @@ public class ClimateCardExcelImporter {
                 }
             }
 
-            log.info("Excel Import Complete. Processed: {}, Updated: {}", processedCount, updatedCount);
+            log.info("엑셀 임포트 완료 - 처리: {}건, 업데이트: {}건", processedCount, updatedCount);
 
+        } catch (IOException e) {
+            log.error("엑셀 파일 읽기 실패", e);
+            throw new IllegalStateException("엑셀 파일 처리 중 오류가 발생했습니다", e);
         } catch (Exception e) {
-            log.error("Failed to import Excel file", e);
+            log.error("엑셀 임포트 실패", e);
+            throw new IllegalStateException("엑셀 데이터 처리 중 오류가 발생했습니다", e);
         }
+    }
+
+    /**
+     * 기후동행카드 적용 노선인지 확인
+     */
+    private boolean isEligibleRoute(String routeName, String eligible) {
+        return routeName != null
+                && !routeName.isBlank()
+                && ValidationConstants.ELIGIBLE_MARKER.equals(eligible);
     }
 
     private boolean updateRouteEligibility(String routeName) {

@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +23,7 @@ public class StationService {
 
     private final StationRepository stationRepository;
     private final RouteService routeService;
-    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+    private final GeometryFactory geometryFactory;  // Spring Bean으로 주입
 
     @Cacheable(value = "nearbyStations", key = "#lat + ':' + #lng + ':' + #radius")
     public List<StationResponse> findNearbyStations(double lat, double lng, double radius) {

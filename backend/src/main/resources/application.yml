@@ -11,14 +11,15 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
+      maximum-pool-size: 30
+      minimum-idle: 10
       connection-timeout: 30000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
@@ -34,7 +35,7 @@ spring:
   cache:
     type: redis
     redis:
-      time-to-live: 600000  # 기본 TTL 10분 (밀리초)
+      time-to-live: 3600000  # 기본 TTL 1시간 (밀리초)
       cache-null-values: false
 
   flyway:
@@ -70,9 +71,69 @@ management:
     caches:
       enabled: true
 
-# Logging
+# Server 설정
+server:
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    max-connections: 10000
+    accept-count: 100
+
+# Admin API 설정
+admin:
+  api:
+    key: ${ADMIN_API_KEY}  # 필수 환경변수 (기본값 없음, 보안 강화)
+
+# Sentry (에러 추적 & 모니터링)
+sentry:
+  dsn: ${SENTRY_DSN:}  # Sentry DSN (비어있으면 비활성화)
+  environment: ${SPRING_PROFILES_ACTIVE:dev}
+  traces-sample-rate: 1.0  # 성능 모니터링 (100%)
+  enable-tracing: true
+  send-default-pii: false  # 개인정보 전송 비활성화
+
+# Logging (기본 설정 - 프로필별 오버라이드)
+logging:
+  level:
+    com.climate.transport: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    io.sentry: WARN
+
+---
+# 개발 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  jpa:
+    show-sql: true  # 개발 환경에서만 SQL 로그 출력
+
+# 개발 환경 로깅 (상세 로그)
 logging:
   level:
     com.climate.transport: DEBUG
     org.hibernate.SQL: DEBUG
-    org.springframework.web: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+# 프로덕션 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    show-sql: false  # 프로덕션에서는 SQL 로그 비활성화
+
+# 프로덕션 로깅 (경고 및 에러만)
+logging:
+  level:
+    com.climate.transport: INFO
+    org.hibernate.SQL: WARN
