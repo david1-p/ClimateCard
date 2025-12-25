@@ -1,6 +1,6 @@
 package com.climate.transport.integration.route;
 
-import com.climate.transport.integration.route.dto.RouteApiResponse;
+import com.climate.transport.integration.route.dto.RouteStationApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,38 +10,47 @@ import org.springframework.web.client.RestClient;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 노선별 정류소 목록 조회 API 클라이언트
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class RouteApiClient {
+public class RouteStationApiClient {
 
     private final RestClient publicRestClient;
 
     @Value("${public-api.service-key}")
     private String serviceKey;
 
-    public List<RouteApiResponse.RouteItem> getRouteInfo(String busRouteId) {
-        // 서울시 노선정보조회 서비스 (getBusRouteList)
-        // URL: http://ws.bus.go.kr/api/rest/busRouteInfo/getBusRouteList
+    /**
+     * 노선별 정류소 목록 조회
+     *
+     * @param routeId 노선 ID (예: "100100409")
+     * @return 정류소 목록
+     */
+    public List<RouteStationApiResponse.StationItem> getStationsByRoute(String routeId) {
+        // 서울시 노선별 정류소 조회 서비스 (getStaionByRoute)
+        // URL: http://ws.bus.go.kr/api/rest/busRouteInfo/getStaionByRoute
 
         try {
             // RestClient의 uriBuilder를 사용하여 baseUrl과 자동 결합
-            RouteApiResponse response = publicRestClient.get()
+            RouteStationApiResponse response = publicRestClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/busRouteInfo/getBusRouteList")
+                            .path("/busRouteInfo/getStaionByRoute")
                             .queryParam("serviceKey", serviceKey)
-                            .queryParam("strSrch", busRouteId)
+                            .queryParam("busRouteId", routeId)
                             .build())
                     .retrieve()
-                    .body(RouteApiResponse.class);
+                    .body(RouteStationApiResponse.class);
 
             if (response != null && response.getMsgBody() != null) {
                 return response.getMsgBody().getItemList();
             } else {
-                log.warn("No route data found for: {}", busRouteId);
+                log.warn("No station data found for route: {}", routeId);
             }
         } catch (Exception e) {
-            log.error("Failed to fetch route info for: " + busRouteId, e);
+            log.error("Failed to fetch stations for route ID: " + routeId, e);
         }
 
         return Collections.emptyList();

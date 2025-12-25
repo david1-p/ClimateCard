@@ -57,6 +57,16 @@ __pycache__/
 
 # Docker
 *.env.backup
+docker-compose.override.yml
+.docker-backup/
+
+# SSL Certificates (절대 커밋 금지!)
+*.pem
+*.key
+*.crt
+
+# Sentry
+.sentryclirc
 
 # Database
 /data/postgres/

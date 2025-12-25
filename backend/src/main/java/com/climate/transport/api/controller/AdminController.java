@@ -85,6 +85,27 @@ public class AdminController {
     }
 
     /**
+     * 노선별 정류소 연결 정보 동기화
+     *
+     * @param routeId 노선 ID (예: "100100409")
+     */
+    @PostMapping("/sync/route-stations")
+    public ResponseEntity<AdminApiResponse> syncRouteStations(
+            @RequestParam String routeId) {
+        try {
+            adminService.syncRouteStations(routeId);
+            return ResponseEntity.ok(
+                    AdminApiResponse.success("노선-정류소 연결 정보 동기화 완료: " + routeId)
+            );
+        } catch (Exception e) {
+            log.error("Route-station sync failed", e);
+            return ResponseEntity.internalServerError().body(
+                    AdminApiResponse.failure(e.getMessage())
+            );
+        }
+    }
+
+    /**
      * 기후동행카드 적용 노선 재설정
      * 1. 모든 노선을 false로 초기화
      * 2. 엑셀 파일을 읽어서 적용 노선만 true로 업데이트

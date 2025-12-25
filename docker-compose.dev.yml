@@ -1,7 +1,0 @@
-services:
-  postgres:
-    environment:
-      POSTGRES_DB: climate_transport_dev
-
-  redis:
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru

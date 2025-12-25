@@ -6,6 +6,7 @@ import { routeApi } from "./api/route";
 import { arrivalApi } from "./api/arrival";
 import type { Station, Route, BusArrival } from "./types/index";
 import { logger } from "./utils/logger";
+import { getRouteTypeName, getRouteTypeColor } from "./utils/busTypes";
 
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.9780 };
 const DEFAULT_SEARCH_RADIUS = 2000;  // 주변 정류장 검색 반경 (미터)
@@ -244,15 +245,12 @@ function App() {
               <div className="space-y-2">
                 {searchResults.map(route => (
                   <div key={route.routeId} className="flex items-center p-2.5 md:p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className={`w-14 h-9 md:w-16 md:h-10 rounded flex items-center justify-center font-bold text-white text-sm md:text-base mr-2 md:mr-3 ${
-                      route.routeType === '3' ? 'bg-blue-500' :
-                      route.routeType === '4' ? 'bg-green-500' : 'bg-gray-500'
-                    }`}>
+                    <div className={`w-14 h-9 md:w-16 md:h-10 rounded flex items-center justify-center font-bold text-white text-sm md:text-base mr-2 md:mr-3 ${getRouteTypeColor(route.routeType)}`}>
                       {route.routeName}
                     </div>
                     <div className="flex-1">
                       <div className="text-xs md:text-sm text-gray-500">
-                        {route.routeType === '3' ? '간선' : route.routeType === '4' ? '지선' : '기타'}
+                        {getRouteTypeName(route.routeType)}
                       </div>
                       {route.climateCardEligible && (
                         <div className="text-xs text-green-600 font-semibold mt-0.5">
@@ -299,13 +297,11 @@ function App() {
                     return (
                       <div key={route.routeId} className="p-2.5 md:p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                         <div className="flex items-center">
-                          <div className={`w-10 h-7 md:w-12 md:h-8 rounded flex items-center justify-center font-bold text-white text-xs md:text-sm mr-2 md:mr-3 ${route.routeType === '3' ? 'bg-blue-500' :
-                            route.routeType === '4' ? 'bg-green-500' : 'bg-gray-500'
-                            }`}>
+                          <div className={`w-10 h-7 md:w-12 md:h-8 rounded flex items-center justify-center font-bold text-white text-xs md:text-sm mr-2 md:mr-3 ${getRouteTypeColor(route.routeType)}`}>
                             {route.routeName}
                           </div>
                           <div className="flex-1">
-                            <div className="text-xs md:text-sm text-gray-500">{route.routeType === '3' ? '간선' : route.routeType === '4' ? '지선' : route.routeType === '5' ? '심야' : route.routeType === '6' ? '마을' : '기타'}</div>
+                            <div className="text-xs md:text-sm text-gray-500">{getRouteTypeName(route.routeType)}</div>
                             {route.climateCardEligible ? (
                               <div className="text-xs text-green-600 font-semibold mt-0.5">
                                 ✓ 기후동행카드 적용

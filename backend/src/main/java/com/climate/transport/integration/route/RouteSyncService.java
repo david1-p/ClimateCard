@@ -21,7 +21,13 @@ public class RouteSyncService {
     @Transactional
     public void syncRoute(String routeName) {
         log.info("Starting route sync for name: {}", routeName);
+
         List<RouteApiResponse.RouteItem> items = routeApiClient.getRouteInfo(routeName);
+
+        if (items == null || items.isEmpty()) {
+            log.warn("No route data found for: {}", routeName);
+            return;
+        }
 
         for (RouteApiResponse.RouteItem item : items) {
             try {
@@ -39,23 +45,19 @@ public class RouteSyncService {
                         isEligible);
 
                 routeRepository.save(route);
+                log.info("Successfully saved route: {} (ID: {})", route.getRouteName(), route.getRouteId());
             } catch (Exception e) {
                 log.error("Error saving route: " + item.getRouteName(), e);
             }
         }
+
+        log.info("Route sync completed. Total routes saved: {}", items.size());
     }
 
     private String mapRouteType(String typeCode) {
-        // 서울시 공공데이터 노선 유형 코드 매핑 (예시)
-        return switch (typeCode) {
-            case "1" -> "AIRPORT";
-            case "2" -> "VILLAGE";
-            case "3" -> "TRUNK"; // 간선
-            case "4" -> "BRANCH"; // 지선
-            case "5" -> "CIRCULATION"; // 순환
-            case "6" -> "WIDE"; // 광역
-            default -> "BUS";
-        };
+        // 서울시 공공데이터 노선 유형 코드 (프론트엔드와 호환을 위해 숫자 코드 그대로 반환)
+        // 1: 공항, 2: 마을, 3: 간선, 4: 지선, 5: 순환, 6: 광역
+        return typeCode != null ? typeCode : "0";
     }
 
     private boolean checkClimateCardEligibility(String routeName) {

@@ -3,6 +3,7 @@ package com.climate.transport.domain.admin.service;
 import com.climate.transport.batch.processor.ClimateCardExcelImporter;
 import com.climate.transport.domain.route.repository.RouteRepository;
 import com.climate.transport.integration.route.RouteSyncService;
+import com.climate.transport.integration.route.RouteStationSyncService;
 import com.climate.transport.integration.seoul.SeoulStationSyncService;
 import com.climate.transport.integration.station.StationSyncService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class AdminService {
 
     private final StationSyncService stationSyncService;
     private final RouteSyncService routeSyncService;
+    private final RouteStationSyncService routeStationSyncService;
     private final SeoulStationSyncService seoulStationSyncService;
     private final ClimateCardExcelImporter climateCardExcelImporter;
     private final RouteRepository routeRepository;
@@ -53,6 +55,16 @@ public class AdminService {
         log.info("Starting Seoul station sync");
         seoulStationSyncService.syncAllStations();
         log.info("Seoul station sync completed");
+    }
+
+    /**
+     * 노선-정류소 연결 정보 동기화
+     * @param routeId 노선 ID
+     */
+    public void syncRouteStations(String routeId) {
+        log.info("Starting route-station sync for: {}", routeId);
+        routeStationSyncService.syncRouteStations(routeId);
+        log.info("Route-station sync completed for: {}", routeId);
     }
 
     /**
