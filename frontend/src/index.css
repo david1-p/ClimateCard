@@ -3,14 +3,85 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Modern Minimal Color Palette */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 10%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 10%;
+  
+  --primary: 160 84% 39%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 10% 10%;
+  
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+  
+  --accent: 160 84% 39%;
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 160 84% 39%;
+  
+  --radius: 0.75rem;
+  
+  /* Semantic Colors for Bus Types */
+  --bus-trunk: 38 92% 50%;
+  --bus-branch: 142 76% 36%;
+  --bus-circulation: 217 91% 60%;
+  --bus-wide: 0 72% 51%;
+  --bus-village: 142 50% 45%;
+  --bus-airport: 262 83% 58%;
+  --bus-default: 215 16% 47%;
+  
+  /* Climate Card */
+  --climate-eligible: 160 84% 39%;
+  --climate-ineligible: 0 72% 51%;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+  --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+  --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+  --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+  --shadow-sheet: 0 -4px 20px hsl(0 0% 0% / 0.08);
+  
+  /* Typography */
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.dark {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+  
+  --card: 240 10% 6%;
+  --card-foreground: 0 0% 98%;
+  
+  --primary: 160 84% 45%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 0 0% 98%;
+  
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 65%;
+  
+  --accent: 160 84% 45%;
+  --accent-foreground: 0 0% 100%;
+  
+  --border: 240 4% 16%;
+  --input: 240 4% 16%;
 }
 
 * {
@@ -24,9 +95,80 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 #root {
   width: 100%;
   height: 100%;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { 
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.5s ease-in-out infinite;
+}
+
+/* Skeleton loading effect */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.1) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.3);
 }
