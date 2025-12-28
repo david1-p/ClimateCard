@@ -3,25 +3,23 @@ name: climate-transport-card
 services:
   # PostgreSQL + PostGIS (dev, prod에서만 사용)
   postgres:
-    image: kartoza/postgis:15-3.3
+    image: postgis/postgis:15-3.3
     container_name: climate-postgres
     profiles: ["dev", "prod"]
     environment:
       POSTGRES_DB: ${DB_NAME:-climate_transport}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_PASS: ${DB_PASSWORD}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
       TZ: Asia/Seoul
-      # PostgreSQL 성능 설정
-      SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-128MB}
-      MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-100}
-      WORK_MEM: ${POSTGRES_WORK_MEM:-4MB}
+    command: >
+      postgres
+      -c shared_buffers=${POSTGRES_SHARED_BUFFERS:-128MB}
+      -c max_connections=${POSTGRES_MAX_CONNECTIONS:-100}
+      -c work_mem=${POSTGRES_WORK_MEM:-4MB}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/docker/postgres/init:/docker-entrypoint-initdb.d
     restart: unless-stopped
     networks:
       - app-network
