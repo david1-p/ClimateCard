@@ -1,6 +1,6 @@
 import { motion, useAnimation } from "framer-motion";
 import type { PanInfo } from "framer-motion";
-import { useEffect, useState, useCallback, ReactNode } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { clsx } from "clsx";
 
 interface BottomSheetProps {
