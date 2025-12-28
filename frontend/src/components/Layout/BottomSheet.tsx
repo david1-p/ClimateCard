@@ -1,4 +1,5 @@
-import { motion, useAnimation, PanInfo } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
+import type { PanInfo } from "framer-motion";
 import { useEffect, useState, useCallback, ReactNode } from "react";
 import { clsx } from "clsx";
 

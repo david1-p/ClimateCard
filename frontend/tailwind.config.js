@@ -44,8 +44,10 @@ export default {
           branch: "hsl(var(--bus-branch))",
           circulation: "hsl(var(--bus-circulation))",
           wide: "hsl(var(--bus-wide))",
+          "wide-express": "hsl(var(--bus-wide-express))",
           village: "hsl(var(--bus-village))",
           airport: "hsl(var(--bus-airport))",
+          night: "hsl(var(--bus-night))",
           default: "hsl(var(--bus-default))",
         },
         

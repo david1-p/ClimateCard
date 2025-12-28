@@ -41,12 +41,14 @@ interface RouteBadgeProps {
 }
 
 const routeTypeColorMap: Record<string, string> = {
-  "1": "bg-bus-trunk", // 간선
-  "2": "bg-bus-branch", // 지선
-  "3": "bg-bus-circulation", // 순환
-  "4": "bg-bus-wide", // 광역
-  "5": "bg-bus-village", // 마을
-  "6": "bg-bus-airport", // 공항
+  "0": "bg-bus-wide", // 광역 (8xxx 빨강)
+  "1": "bg-bus-airport", // 공항 (주황)
+  "2": "bg-bus-village", // 마을 (연두)
+  "3": "bg-bus-trunk", // 간선 (421, 146 파랑)
+  "4": "bg-bus-branch", // 지선 (3321, 3413 초록)
+  "5": "bg-bus-circulation", // 순환 (노랑)
+  "6": "bg-bus-wide-express", // 광역급행 (진한빨강)
+  "13": "bg-bus-night", // 심야 (파랑)
 };
 
 export const RouteBadge = ({ routeName, routeType, size = "md" }: RouteBadgeProps) => {

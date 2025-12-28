@@ -31,14 +31,16 @@
   
   --radius: 0.75rem;
   
-  /* Semantic Colors for Bus Types */
-  --bus-trunk: 38 92% 50%;
-  --bus-branch: 142 76% 36%;
-  --bus-circulation: 217 91% 60%;
-  --bus-wide: 0 72% 51%;
-  --bus-village: 142 50% 45%;
-  --bus-airport: 262 83% 58%;
-  --bus-default: 215 16% 47%;
+  /* Semantic Colors for Bus Types (서울시 공식 색상) */
+  --bus-trunk: 217 91% 50%; /* 간선 (파랑) */
+  --bus-branch: 142 76% 36%; /* 지선 (초록) */
+  --bus-circulation: 48 96% 53%; /* 순환 (노랑) */
+  --bus-wide: 0 72% 51%; /* 광역 (빨강) */
+  --bus-wide-express: 0 84% 45%; /* 광역급행 (진한빨강) */
+  --bus-village: 142 50% 45%; /* 마을 (연두) */
+  --bus-airport: 38 92% 50%; /* 공항 (주황) */
+  --bus-night: 217 91% 50%; /* 심야 (파랑) */
+  --bus-default: 215 16% 47%; /* 기타 (회색) */
   
   /* Climate Card */
   --climate-eligible: 160 84% 39%;
