@@ -3,6 +3,8 @@ plugins {
 	id 'org.springframework.boot' version '3.4.0'
 	id 'io.spring.dependency-management' version '1.1.6'
 	id 'org.owasp.dependencycheck' version '9.0.9'
+	id 'org.sonarqube' version '5.1.0.4882'
+	id 'jacoco'
 }
 
 group = 'com.climate'
@@ -74,5 +76,45 @@ dependencyCheck {
 	failBuildOnCVSS = 7  // CVSS 점수 7 이상 (High, Critical)이면 빌드 실패
 	analyzers {
 		assemblyEnabled = false  // .NET 분석 비활성화 (성능 향상)
+	}
+}
+
+// JaCoCo 코드 커버리지 설정
+jacoco {
+	toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
+}
+
+test {
+	finalizedBy jacocoTestReport
+}
+
+// SonarQube 설정
+sonar {
+	properties {
+		property "sonar.projectKey", "climate-transport-card"
+		property "sonar.projectName", "기후동행카드 조회 시스템"
+		property "sonar.host.url", "http://localhost:9000"
+		property "sonar.sources", "src/main/java"
+		property "sonar.tests", "src/test/java"
+		property "sonar.java.binaries", "build/classes/java/main"
+		property "sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml"
+		property "sonar.java.source", "21"
+		property "sonar.sourceEncoding", "UTF-8"
+
+		// 코드 스멜 임계값 설정
+		property "sonar.qualitygate.wait", "false"
+
+		// 제외할 패턴
+		property "sonar.exclusions", "**/config/**,**/dto/**,**/entity/**"
+		property "sonar.test.exclusions", "**/test/**"
 	}
 }

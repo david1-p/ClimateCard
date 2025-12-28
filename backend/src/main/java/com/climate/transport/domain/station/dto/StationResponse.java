@@ -30,4 +30,8 @@ public class StationResponse {
                 .distance(distance)
                 .build();
     }
+
+    public static StationResponse from(Station station) {
+        return from(station, 0.0);
+    }
 }

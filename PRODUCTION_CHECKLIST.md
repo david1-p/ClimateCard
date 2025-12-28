@@ -37,7 +37,7 @@
 DB_PASSWORD=1q2w  # 🔴 변경 필수!
 
 # ❌ 개발용 키를 프로덕션에서 사용 중!
-ADMIN_API_KEY=MpwnlWxqJU5yAzOuO2/a5TG+bOgy9TakrWJQG5E/VFg=  # 🔴 재생성 필수!
+ADMIN_API_KEY=<현재_노출된_개발용_키>  # 🔴 재생성 필수!
 ```
 
 **강력한 비밀번호 생성 방법:**

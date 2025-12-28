@@ -4,6 +4,7 @@ import com.climate.transport.domain.route.dto.RouteResponse;
 import com.climate.transport.domain.route.entity.Route;
 import com.climate.transport.domain.route.repository.RouteRepository;
 import com.climate.transport.domain.route.repository.RouteStationRepository;
+import com.climate.transport.domain.station.dto.StationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,13 @@ public class RouteService {
     public List<RouteResponse> findAllRoutesByStation(String stationId) {
         return routeStationRepository.findAllRoutesByStationId(stationId).stream()
                 .map(RouteResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    @Cacheable(value = "routeStations", key = "#routeId")
+    public List<StationResponse> findStationsByRoute(String routeId) {
+        return routeStationRepository.findStationsByRouteId(routeId).stream()
+                .map(StationResponse::from)
                 .collect(Collectors.toList());
     }
 }

@@ -65,8 +65,9 @@ public class InputValidator {
                     ValidationConstants.MAX_KEYWORD_LENGTH));
         }
 
-        // XSS 방지: HTML 태그 패턴 검증
-        if (trimmed.matches(".*<[^>]+>.*")) {
+        // XSS 방지: HTML 태그 문자 검증
+        // ReDoS 취약점 제거: 정규식 대신 단순 문자열 검사 사용
+        if (trimmed.contains("<") || trimmed.contains(">")) {
             throw new IllegalArgumentException("검색어에 HTML 태그를 포함할 수 없습니다");
         }
     }

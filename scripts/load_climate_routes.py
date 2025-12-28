@@ -28,13 +28,13 @@ def load_excel_data():
 
     # 기후동행카드 적용 노선
     climate_routes = pd.read_excel(
-        '/Users/david/Desktop/기후동행/1._기후동행카드_적용_노선_전체_목록(버스_및_지하철).xlsx',
+        '/Users/david/Desktop/기후동행/data/1._기후동행카드_적용_노선_전체_목록(버스_및_지하철).xlsx',
         sheet_name='버스'
     )
 
     # 서울시 버스노선ID 정보
     route_ids = pd.read_excel(
-        '/Users/david/Desktop/기후동행/서울시버스노선ID정보(20251103).xlsx'
+        '/Users/david/Desktop/기후동행/data/서울시버스노선ID정보(20251209).xlsx'
     )
 
     print(f"✅ Loaded {len(climate_routes)} climate routes")

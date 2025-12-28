@@ -1,0 +1,12 @@
+{
+  "name": "climate-transport",
+  "version": "1.0.0",
+  "description": "기후동행카드 조회 시스템",
+  "scripts": {
+    "scrape": "node scripts/scrape_busgo_routes.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0",
+    "pg": "^8.11.0"
+  }
+}

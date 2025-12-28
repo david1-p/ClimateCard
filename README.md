@@ -275,7 +275,7 @@ docker-compose ps        # 상태 확인
 docker-compose logs -f   # 로그 확인
 
 # 데이터베이스 접속
-docker exec -e PGPASSWORD=1q2w climate-postgres psql -h localhost -U postgres -d climate_transport
+docker exec -e PGPASSWORD=<YOUR_PASSWORD> climate-postgres psql -h localhost -U postgres -d climate_transport
 
 # Redis 접속
 docker exec -it climate-redis redis-cli

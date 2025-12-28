@@ -3,6 +3,7 @@ package com.climate.transport.domain.route.repository;
 import com.climate.transport.domain.route.entity.Route;
 import com.climate.transport.domain.route.entity.RouteStation;
 import com.climate.transport.domain.route.entity.RouteStationId;
+import com.climate.transport.domain.station.entity.Station;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +22,9 @@ public interface RouteStationRepository extends JpaRepository<RouteStation, Rout
             "WHERE rs.stationId = :stationId " +
             "ORDER BY rs.sequence")
     List<Route> findAllRoutesByStationId(@Param("stationId") String stationId);
+
+    @Query("SELECT s FROM RouteStation rs JOIN rs.station s " +
+            "WHERE rs.routeId = :routeId " +
+            "ORDER BY rs.sequence")
+    List<Station> findStationsByRouteId(@Param("routeId") String routeId);
 }

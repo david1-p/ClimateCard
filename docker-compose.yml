@@ -13,14 +13,10 @@ services:
       POSTGRES_PASS: ${DB_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
       TZ: Asia/Seoul
-    command:
-      - "postgres"
-      - "-c"
-      - "shared_buffers=${POSTGRES_SHARED_BUFFERS:-128MB}"
-      - "-c"
-      - "max_connections=${POSTGRES_MAX_CONNECTIONS:-100}"
-      - "-c"
-      - "work_mem=${POSTGRES_WORK_MEM:-4MB}"
+      # PostgreSQL 성능 설정
+      SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-128MB}
+      MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-100}
+      WORK_MEM: ${POSTGRES_WORK_MEM:-4MB}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
@@ -147,9 +143,50 @@ services:
     networks:
       - app-network
 
+  # SonarQube (dev 환경에서만 사용 - 코드 품질 분석)
+  sonarqube:
+    image: sonarqube:25.12.0.117093-community
+    container_name: climate-sonarqube
+    profiles: ["dev"]
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    restart: unless-stopped
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # Locust (부하 테스트 - 필요 시 수동 실행)
+  locust:
+    image: locustio/locust:latest
+    container_name: climate-locust
+    profiles: ["loadtest"]
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./loadtest:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --host=http://backend:8080
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
 volumes:
   postgres_data:
   redis_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
 
 networks:
   app-network:

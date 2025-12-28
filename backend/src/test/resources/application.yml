@@ -1,0 +1,53 @@
+# 테스트용 Spring Boot 설정
+
+spring:
+  # H2 In-Memory Database (PostGIS 함수 제외)
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: false
+
+  # Redis (임베디드 사용)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # Flyway 비활성화 (테스트에서는 ddl-auto로 스키마 생성)
+  flyway:
+    enabled: false
+
+# 외부 API 설정 (더미 값)
+public-api:
+  service-key: test-key
+  base-url: http://localhost:8080
+
+seoul-api:
+  key: test-key
+  base-url: http://localhost:8080
+
+# 관리자 API 키 (테스트용)
+admin:
+  api-key: test-admin-key
+
+# Sentry 비활성화
+sentry:
+  dsn: ""
+  enabled: false
+
+# 로깅
+logging:
+  level:
+    root: INFO
+    com.climate.transport: DEBUG

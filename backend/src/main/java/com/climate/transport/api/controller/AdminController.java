@@ -31,17 +31,10 @@ public class AdminController {
     @PostMapping("/sync/stations")
     public ResponseEntity<AdminApiResponse> syncStations(
             @RequestParam(defaultValue = "서울") String searchTerm) {
-        try {
-            adminService.syncStations(searchTerm);
-            return ResponseEntity.ok(
-                    AdminApiResponse.success("정류소 동기화 완료: " + searchTerm)
-            );
-        } catch (Exception e) {
-            log.error("Station sync failed", e);
-            return ResponseEntity.internalServerError().body(
-                    AdminApiResponse.failure(e.getMessage())
-            );
-        }
+        adminService.syncStations(searchTerm);
+        return ResponseEntity.ok(
+                AdminApiResponse.success("정류소 동기화 완료: " + searchTerm)
+        );
     }
 
     /**
@@ -52,17 +45,10 @@ public class AdminController {
     @PostMapping("/sync/routes")
     public ResponseEntity<AdminApiResponse> syncRoutes(
             @RequestParam String routeName) {
-        try {
-            adminService.syncRoutes(routeName);
-            return ResponseEntity.ok(
-                    AdminApiResponse.success("노선 동기화 완료: " + routeName)
-            );
-        } catch (Exception e) {
-            log.error("Route sync failed", e);
-            return ResponseEntity.internalServerError().body(
-                    AdminApiResponse.failure(e.getMessage())
-            );
-        }
+        adminService.syncRoutes(routeName);
+        return ResponseEntity.ok(
+                AdminApiResponse.success("노선 동기화 완료: " + routeName)
+        );
     }
 
     /**
@@ -71,17 +57,10 @@ public class AdminController {
      */
     @PostMapping("/sync/seoul-stations")
     public ResponseEntity<AdminApiResponse> syncSeoulStations() {
-        try {
-            adminService.syncSeoulStations();
-            return ResponseEntity.ok(
-                    AdminApiResponse.success("서울시 정류소 동기화 완료")
-            );
-        } catch (Exception e) {
-            log.error("Seoul station sync failed", e);
-            return ResponseEntity.internalServerError().body(
-                    AdminApiResponse.failure(e.getMessage())
-            );
-        }
+        adminService.syncSeoulStations();
+        return ResponseEntity.ok(
+                AdminApiResponse.success("서울시 정류소 동기화 완료")
+        );
     }
 
     /**
@@ -92,17 +71,10 @@ public class AdminController {
     @PostMapping("/sync/route-stations")
     public ResponseEntity<AdminApiResponse> syncRouteStations(
             @RequestParam String routeId) {
-        try {
-            adminService.syncRouteStations(routeId);
-            return ResponseEntity.ok(
-                    AdminApiResponse.success("노선-정류소 연결 정보 동기화 완료: " + routeId)
-            );
-        } catch (Exception e) {
-            log.error("Route-station sync failed", e);
-            return ResponseEntity.internalServerError().body(
-                    AdminApiResponse.failure(e.getMessage())
-            );
-        }
+        adminService.syncRouteStations(routeId);
+        return ResponseEntity.ok(
+                AdminApiResponse.success("노선-정류소 연결 정보 동기화 완료: " + routeId)
+        );
     }
 
     /**
@@ -114,26 +86,12 @@ public class AdminController {
      */
     @PostMapping("/reset-climate-card")
     public ResponseEntity<AdminApiResponse> resetClimateCardEligibility() {
-        try {
-            long totalRoutes = adminService.resetClimateCardEligibility();
-            return ResponseEntity.ok(
-                    AdminApiResponse.success(
-                            "기후동행카드 적용 여부 재설정 완료",
-                            Map.of("totalRoutes", totalRoutes)
-                    )
-            );
-        } catch (IllegalStateException e) {
-            // 비즈니스 로직 예외
-            log.error("기후동행카드 재설정 실패 - 비즈니스 로직 오류: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(
-                    AdminApiResponse.failure("재설정 실패: " + e.getMessage())
-            );
-        } catch (Exception e) {
-            // 예상치 못한 예외
-            log.error("기후동행카드 재설정 실패 - 시스템 오류", e);
-            return ResponseEntity.internalServerError().body(
-                    AdminApiResponse.failure("시스템 오류가 발생했습니다. 관리자에게 문의하세요.")
-            );
-        }
+        long totalRoutes = adminService.resetClimateCardEligibility();
+        return ResponseEntity.ok(
+                AdminApiResponse.success(
+                        "기후동행카드 적용 여부 재설정 완료",
+                        Map.of("totalRoutes", totalRoutes)
+                )
+        );
     }
 }

@@ -48,7 +48,7 @@
 ### 1. API Key 확인
 ```bash
 cat .env | grep ADMIN_API_KEY
-# ADMIN_API_KEY=MpwnlWxqJU5yAzOuO2/a5TG+bOgy9TakrWJQG5E/VFg=
+# ADMIN_API_KEY=<YOUR_ADMIN_API_KEY>
 ```
 
 ### 2. Postman/Insomnia 사용
@@ -56,7 +56,7 @@ cat .env | grep ADMIN_API_KEY
 ```http
 POST http://localhost:8080/api/admin/sync/stations?searchTerm=서울역
 Headers:
-  X-Admin-API-Key: MpwnlWxqJU5yAzOuO2/a5TG+bOgy9TakrWJQG5E/VFg=
+  X-Admin-API-Key: <YOUR_ADMIN_API_KEY>
   Content-Type: application/json
 ```
 
@@ -64,13 +64,13 @@ Headers:
 
 ```bash
 curl -X POST "http://localhost:8080/api/admin/sync/stations?searchTerm=서울역" \
-  -H "X-Admin-API-Key: MpwnlWxqJU5yAzOuO2/a5TG+bOgy9TakrWJQG5E/VFg="
+  -H "X-Admin-API-Key: <YOUR_ADMIN_API_KEY>"
 ```
 
 ### 4. 프론트엔드에서 사용
 
 ```typescript
-const ADMIN_API_KEY = 'MpwnlWxqJU5yAzOuO2/a5TG+bOgy9TakrWJQG5E/VFg=';
+const ADMIN_API_KEY = '<YOUR_ADMIN_API_KEY>';
 
 const response = await fetch('/api/admin/sync/stations?searchTerm=서울역', {
   method: 'POST',
@@ -126,7 +126,7 @@ curl -X POST http://localhost:8080/api/admin/sync/stations?searchTerm=서울역 
 ```bash
 # 올바른 API Key로 요청
 curl -X POST http://localhost:8080/api/admin/sync/stations?searchTerm=서울역 \
-  -H "X-Admin-API-Key: MpwnlWxqJU5yAzOuO2/a5TG+bOgy9TakrWJQG5E/VFg="
+  -H "X-Admin-API-Key: <YOUR_ADMIN_API_KEY>"
 
 # 예상 응답: 200 OK
 {

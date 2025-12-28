@@ -3,6 +3,7 @@ package com.climate.transport.api.controller;
 import com.climate.transport.api.validation.InputValidator;
 import com.climate.transport.domain.route.dto.RouteResponse;
 import com.climate.transport.domain.route.service.RouteService;
+import com.climate.transport.domain.station.dto.StationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -60,6 +61,24 @@ public class RouteController {
 
         RouteResponse route = routeService.findRouteById(routeId);
         return ResponseEntity.ok(route);
+    }
+
+    /**
+     * 노선의 정류소 목록 조회
+     *
+     * @param routeId 노선 ID
+     */
+    @GetMapping(value = "/{routeId}/stations", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<StationResponse>> getRouteStations(
+            @PathVariable String routeId) {
+
+        // 입력 검증
+        inputValidator.validateRouteId(routeId);
+
+        log.debug("노선 정류소 목록 조회 요청 - 노선 ID: {}", routeId);
+
+        List<StationResponse> stations = routeService.findStationsByRoute(routeId);
+        return ResponseEntity.ok(stations);
     }
 
     /**

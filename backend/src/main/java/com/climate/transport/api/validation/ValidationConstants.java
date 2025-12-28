@@ -18,7 +18,7 @@ public final class ValidationConstants {
     // 반경 검증
     public static final double MIN_RADIUS = 50.0;     // 최소 반경 50m
     public static final double MAX_RADIUS = 2000.0;   // 최대 반경 2km
-    public static final double DEFAULT_RADIUS = 500.0; // 기본 반경 500m
+    public static final double DEFAULT_RADIUS = 100.0; // 기본 반경 100m
 
     // 검색어 검증
     public static final int MIN_KEYWORD_LENGTH = 1;
