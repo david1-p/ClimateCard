@@ -95,6 +95,16 @@ function App() {
     setArrivalsLoading(true);
     setErrorMessage(null);
 
+    // 정류소를 지도 중앙으로 이동
+    const stationPosition = {
+      lat: Number(station.latitude),
+      lng: Number(station.longitude)
+    };
+    setCenter(stationPosition);
+    if (mapRef.current) {
+      mapRef.current.setCenter(new kakao.maps.LatLng(stationPosition.lat, stationPosition.lng));
+    }
+
     try {
       const [routesData, arrivalsData] = await Promise.all([
         stationApi.getAllRoutes(station.stationId),
@@ -174,6 +184,35 @@ function App() {
     ? routes.filter(r => r.climateCardEligible)
     : routes;
 
+  // 도착 정보 기반으로 노선 정렬 (차고지/출발대기는 아래로)
+  const sortedFilteredRoutes = [...filteredRoutes].sort((a, b) => {
+    const arrivalA = arrivals.find(arr => arr.routeId === a.routeId);
+    const arrivalB = arrivals.find(arr => arr.routeId === b.routeId);
+
+    // 차고지/출발대기 키워드
+    const waitingKeywords = ['차고지', '출발대기', '회차', '운행종료', '회차대기'];
+
+    const isWaitingA = arrivalA && (
+      waitingKeywords.some(keyword => arrivalA.arrmsg1?.includes(keyword) || arrivalA.arrmsg2?.includes(keyword))
+    );
+    const isWaitingB = arrivalB && (
+      waitingKeywords.some(keyword => arrivalB.arrmsg1?.includes(keyword) || arrivalB.arrmsg2?.includes(keyword))
+    );
+
+    // 둘 다 대기 중이면 원래 순서 유지
+    if (isWaitingA && isWaitingB) return 0;
+    // A만 대기 중이면 A를 아래로
+    if (isWaitingA) return 1;
+    // B만 대기 중이면 B를 아래로
+    if (isWaitingB) return -1;
+
+    // 도착 정보가 있는 것을 위로
+    if (arrivalA && !arrivalB) return -1;
+    if (!arrivalA && arrivalB) return 1;
+
+    return 0;
+  });
+
   // Handle nearby button click
   const handleNearbyClick = () => {
     if (userLocation) {
@@ -221,17 +260,35 @@ function App() {
     );
   }
 
+  const handleOpenChat = () => {
+    // 카카오톡 오픈챗 URL (환경변수로 설정 가능)
+    const openChatUrl = import.meta.env.VITE_KAKAO_OPENCHAT_URL || 'https://open.kakao.com/o/your-openchat-link';
+    window.open(openChatUrl, '_blank');
+  };
+
   return (
     <div className="w-full h-screen relative overflow-hidden bg-background">
-      {/* Map Area */}
-      <Map
-        center={center}
-        style={{ width: "100%", height: "100%" }}
-        level={3}
-        isPanto={false}
-        onDragEnd={handleDragEnd}
-        ref={mapRef}
+      {/* 문의 버튼 */}
+      <button
+        onClick={handleOpenChat}
+        className="absolute top-6 left-6 z-50 w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all duration-200"
+        aria-label="카카오톡 오픈챗 문의"
       >
+        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      </button>
+
+      {/* Map Area */}
+      <div className="w-full h-full pt-4 pl-4 pr-4">
+        <Map
+          center={center}
+          style={{ width: "100%", height: "100%" }}
+          level={3}
+          isPanto={false}
+          onDragEnd={handleDragEnd}
+          ref={mapRef}
+        >
         {userLocation && (
           <MapMarker
             position={{ lat: userLocation.lat, lng: userLocation.lng }}
@@ -252,10 +309,11 @@ function App() {
             zIndex={1}
           />
         ))}
-      </Map>
+        </Map>
+      </div>
 
       {/* Bottom Sheet */}
-      <BottomSheet>
+      <BottomSheet contentItemCount={selectedStation ? sortedFilteredRoutes.length : 0}>
         <div className="space-y-4 pb-6">
           {/* Error Message */}
           {errorMessage && (
@@ -455,21 +513,21 @@ function App() {
                   <RouteCardSkeleton />
                   <RouteCardSkeleton />
                 </div>
-              ) : filteredRoutes.length > 0 ? (
+              ) : sortedFilteredRoutes.length > 0 ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs text-muted-foreground">
                       경유 노선
                     </p>
                     <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                      {filteredRoutes.length}개
+                      {sortedFilteredRoutes.length}개
                     </span>
                   </div>
-                  {filteredRoutes.map(route => {
+                  {sortedFilteredRoutes.map(route => {
                     const arrival = arrivals.find(a => a.routeId === route.routeId);
                     return (
-                      <Card 
-                        key={route.routeId} 
+                      <Card
+                        key={route.routeId}
                         highlighted={route.climateCardEligible}
                         className="p-3"
                       >
@@ -479,40 +537,38 @@ function App() {
                             <div className="text-xs text-muted-foreground">{getRouteTypeName(route.routeType)}</div>
                             <ClimateEligibilityBadge eligible={route.climateCardEligible} />
                           </div>
+
+                          {/* Arrival Info - 오른쪽에 배치 */}
+                          {arrivalsLoading ? (
+                            <div className="skeleton h-8 w-20 rounded" />
+                          ) : arrival ? (
+                            <div className="flex flex-col gap-1 text-right min-w-0">
+                              {arrival.arrmsg1 ? (
+                                <div className="flex items-center gap-1.5 justify-end">
+                                  <span className="text-[11px] text-foreground font-medium truncate max-w-[120px]">
+                                    {arrival.arrmsg1}
+                                  </span>
+                                  {arrival.isLast1 === '1' && (
+                                    <span className="text-destructive text-[9px] font-bold bg-destructive/10 px-1 py-0.5 rounded shrink-0">막차</span>
+                                  )}
+                                </div>
+                              ) : null}
+                              {arrival.arrmsg2 ? (
+                                <div className="flex items-center gap-1.5 justify-end">
+                                  <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">
+                                    {arrival.arrmsg2}
+                                  </span>
+                                  {arrival.isLast2 === '1' && (
+                                    <span className="text-destructive text-[9px] font-bold bg-destructive/10 px-1 py-0.5 rounded shrink-0">막차</span>
+                                  )}
+                                </div>
+                              ) : null}
+                              {!arrival.arrmsg1 && !arrival.arrmsg2 && (
+                                <span className="text-[11px] text-muted-foreground">정보없음</span>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
-                        
-                        {/* Arrival Info */}
-                        {(arrival || arrivalsLoading) && (
-                          <div className="mt-3 pt-3 border-t border-border">
-                            {arrivalsLoading ? (
-                              <div className="skeleton h-4 w-32 rounded" />
-                            ) : arrival ? (
-                              <div className="space-y-2">
-                                {arrival.arrmsg1 && (
-                                  <div className="flex items-center gap-2 text-xs">
-                                    <span className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center text-primary font-bold text-[10px]">1</span>
-                                    <span className="text-foreground font-medium">{arrival.arrmsg1}</span>
-                                    {arrival.isLast1 === '1' && (
-                                      <span className="text-destructive text-[10px] font-bold bg-destructive/10 px-1.5 py-0.5 rounded">막차</span>
-                                    )}
-                                  </div>
-                                )}
-                                {arrival.arrmsg2 && (
-                                  <div className="flex items-center gap-2 text-xs">
-                                    <span className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-muted-foreground font-bold text-[10px]">2</span>
-                                    <span className="text-muted-foreground">{arrival.arrmsg2}</span>
-                                    {arrival.isLast2 === '1' && (
-                                      <span className="text-destructive text-[10px] font-bold bg-destructive/10 px-1.5 py-0.5 rounded">막차</span>
-                                    )}
-                                  </div>
-                                )}
-                                {!arrival.arrmsg1 && !arrival.arrmsg2 && (
-                                  <span className="text-xs text-muted-foreground">도착 정보 없음</span>
-                                )}
-                              </div>
-                            ) : null}
-                          </div>
-                        )}
                       </Card>
                     );
                   })}
