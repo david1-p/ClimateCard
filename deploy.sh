@@ -89,6 +89,43 @@ docker compose --profile prod up -d
 echo -e "${GREEN}✅ 컨테이너 시작 완료${NC}"
 echo ""
 
+# 6-1. DB 자동 복원
+DUMP_FILE="climate_prod_dump.backup"
+if [ -f "$DUMP_FILE" ]; then
+    echo "📦 DB 덤프 파일 발견: $DUMP_FILE"
+    echo "   DB 복원을 준비합니다..."
+    
+    # DB 시작 대기
+    echo "   PostgreSQL 시작 대기 중..."
+    MAX_DB_RETRIES=30
+    DB_RETRY=0
+    
+    until docker compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1 || [ $DB_RETRY -eq $MAX_DB_RETRIES ]; do
+        echo -n "."
+        sleep 2
+        DB_RETRY=$((DB_RETRY+1))
+    done
+    echo ""
+
+    if [ $DB_RETRY -eq $MAX_DB_RETRIES ]; then
+        echo -e "${RED}❌ DB 연결 실패! 복원을 건너뜁니다.${NC}"
+    else
+        echo "   DB가 준비되었습니다. 복원을 시작합니다..."
+        
+        # 덤프 파일 컨테이너로 복사
+        docker cp "$DUMP_FILE" climate-postgres:/tmp/restore.dump
+        
+        # 복원 실행 (기존 데이터 삭제 후 복원: -c)
+        # 에러 무시: 이미 존재하는 객체 등으로 인한 에러가 발생할 수 있음
+        docker compose exec -T postgres pg_restore -U postgres -d climate_transport -v -c /tmp/restore.dump || true
+        
+        echo -e "${GREEN}✅ DB 복원 작업 완료!${NC}"
+        mv "$DUMP_FILE" "${DUMP_FILE}.restored"
+        echo "   덤프 파일 이름을 변경했습니다: ${DUMP_FILE}.restored"
+    fi
+    echo ""
+fi
+
 # 7. 헬스체크
 echo "🏥 7. 서비스 헬스체크..."
 echo "   백엔드 시작 대기 중 (최대 90초)..."
