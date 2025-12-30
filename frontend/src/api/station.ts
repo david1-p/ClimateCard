@@ -10,6 +10,14 @@ export const stationApi = {
         return response.data;
     },
 
+    // 정류소 이름으로 검색
+    searchStations: async (keyword: string) => {
+        const response = await client.get<Station[]>('/stations/search', {
+            params: { keyword },
+        });
+        return response.data;
+    },
+
     // 정류소별 기후동행카드 적용 노선 조회
     getClimateRoutes: async (stationId: string) => {
         const response = await client.get<Route[]>(`/routes/station/${stationId}/climate-eligible`);

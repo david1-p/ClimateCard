@@ -15,7 +15,7 @@ import { logger } from "./utils/logger";
 import { getRouteTypeName } from "./utils/busTypes";
 
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.9780 };
-const DEFAULT_SEARCH_RADIUS = 2000;
+const DEFAULT_SEARCH_RADIUS = 500; // 주변 정류소 검색 반경 (미터)
 
 function App() {
   const appKey = import.meta.env.VITE_KAKAO_APP_KEY;
@@ -39,11 +39,18 @@ function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [arrivals, setArrivals] = useState<BusArrival[]>([]);
   const [arrivalsLoading, setArrivalsLoading] = useState(false);
-  
+
   // New state for improved UI
   const [searchTab, setSearchTab] = useState<"route" | "station">("route");
   const [stationSearchKeyword, setStationSearchKeyword] = useState("");
+  const [stationSearchResults, setStationSearchResults] = useState<Station[]>([]);
+  const [isStationSearching, setIsStationSearching] = useState(false);
   const [climateOnly, setClimateOnly] = useState(false);
+
+  // Route detail state
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [routeStations, setRouteStations] = useState<Station[]>([]);
+  const [routeStationsLoading, setRouteStationsLoading] = useState(false);
 
   // Get user location
   useEffect(() => {
@@ -60,6 +67,20 @@ function App() {
         },
         (err) => {
           logger.error("Geolocation error:", err);
+
+          // 위치 권한 거부 시 사용자에게 알림
+          if (err.code === err.PERMISSION_DENIED) {
+            setErrorMessage("위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.");
+          } else if (err.code === err.TIMEOUT) {
+            setErrorMessage("위치 정보를 가져오는 데 시간이 너무 오래 걸립니다.");
+          } else {
+            setErrorMessage("위치 정보를 가져올 수 없습니다.");
+          }
+        },
+        {
+          enableHighAccuracy: true, // GPS 사용 (iPhone에서 중요)
+          timeout: 5000, // 5초 타임아웃
+          maximumAge: 0 // 캐시된 위치 사용 안 함
         }
       );
     }
@@ -127,6 +148,44 @@ function App() {
     }
   };
 
+  // Refresh station data (without map movement)
+  const handleRefreshStation = async () => {
+    if (!selectedStation) {
+      logger.warn('⚠️ No station selected for refresh');
+      return;
+    }
+
+    logger.log(`🔄 [REFRESH] Starting refresh for station:`, selectedStation.stationName);
+    logger.log(`🔄 [REFRESH] Before - Routes: ${routes.length}, Arrivals: ${arrivals.length}`);
+
+    setRoutesLoading(true);
+    setArrivalsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const [routesData, arrivalsData] = await Promise.all([
+        stationApi.getAllRoutes(selectedStation.stationId),
+        arrivalApi.getArrivalsByStation(selectedStation.stationId)
+      ]);
+
+      logger.log(`✅ [REFRESH] Successfully fetched - Routes: ${routesData.length}, Arrivals: ${arrivalsData.length}`);
+      logger.log(`🚌 [REFRESH] Routes:`, routesData);
+      logger.log(`⏰ [REFRESH] Arrivals:`, arrivalsData);
+
+      setRoutes(routesData);
+      setArrivals(arrivalsData);
+
+      logger.log(`✅ [REFRESH] State updated successfully`);
+    } catch (err) {
+      logger.error("❌ [REFRESH] Failed to refresh station info:", err);
+      setErrorMessage("정류소 정보를 새로고침하는데 실패했습니다.");
+    } finally {
+      setRoutesLoading(false);
+      setArrivalsLoading(false);
+      logger.log(`🔄 [REFRESH] Refresh completed`);
+    }
+  };
+
   // Map drag end
   const handleDragEnd = (map: kakao.maps.Map) => {
     const latlng = map.getCenter();
@@ -154,6 +213,27 @@ function App() {
     }
   };
 
+  // Station search
+  const handleStationSearch = async (keyword: string) => {
+    if (!keyword.trim()) {
+      setStationSearchResults([]);
+      setIsStationSearching(false);
+      return;
+    }
+
+    setIsStationSearching(true);
+    try {
+      const data = await stationApi.searchStations(keyword);
+      logger.log(`🔍 Station search results for "${keyword}":`, data);
+      setStationSearchResults(data);
+    } catch (err) {
+      logger.error("❌ Failed to search stations:", err);
+      setStationSearchResults([]);
+    } finally {
+      setIsStationSearching(false);
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchKeyword) {
@@ -167,13 +247,22 @@ function App() {
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
-  // Filter stations by name
-  const filteredStations = stationSearchKeyword
-    ? stations.filter(s => 
-        s.stationName.toLowerCase().includes(stationSearchKeyword.toLowerCase()) ||
-        s.stationId.includes(stationSearchKeyword)
-      )
-    : stations;
+  // Station search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (stationSearchKeyword) {
+        handleStationSearch(stationSearchKeyword);
+      } else {
+        setStationSearchResults([]);
+        setIsStationSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [stationSearchKeyword]);
+
+  // Display stations: 검색어가 있으면 검색 결과, 없으면 주변 정류소
+  const displayedStations = stationSearchKeyword ? stationSearchResults : stations;
 
   // Filter routes by climate card eligibility
   const filteredSearchResults = climateOnly
@@ -212,6 +301,27 @@ function App() {
 
     return 0;
   });
+
+  // Handle route click (from search results)
+  const handleRouteClick = async (route: Route) => {
+    logger.log(`🚌 Route clicked:`, route);
+    setSelectedRoute(route);
+    setSelectedStation(null); // 정류소 선택 해제
+    setRouteStationsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const stationsData = await routeApi.getRouteStations(route.routeId);
+      logger.log(`🚏 Stations for route ${route.routeName}:`, stationsData);
+      setRouteStations(stationsData);
+    } catch (err) {
+      logger.error("❌ Failed to fetch route stations:", err);
+      setErrorMessage("노선 정보를 불러오는데 실패했습니다.");
+      setRouteStations([]);
+    } finally {
+      setRouteStationsLoading(false);
+    }
+  };
 
   // Handle nearby button click
   const handleNearbyClick = () => {
@@ -289,31 +399,31 @@ function App() {
           onDragEnd={handleDragEnd}
           ref={mapRef}
         >
-        {userLocation && (
-          <MapMarker
-            position={{ lat: userLocation.lat, lng: userLocation.lng }}
-            image={{
-              src: "/marker.png",
-              size: { width: 40, height: 60 },
-            }}
-          />
-        )}
+          {userLocation && (
+            <MapMarker
+              position={{ lat: userLocation.lat, lng: userLocation.lng }}
+              image={{
+                src: "/marker.png",
+                size: { width: 40, height: 60 },
+              }}
+            />
+          )}
 
-        {stations.map((station) => (
-          <MapMarker
-            key={`station-${station.stationId}`}
-            position={{ lat: Number(station.latitude), lng: Number(station.longitude) }}
-            title={station.stationName}
-            onClick={() => handleStationClick(station)}
-            clickable={true}
-            zIndex={1}
-          />
-        ))}
+          {stations.map((station) => (
+            <MapMarker
+              key={`station-${station.stationId}`}
+              position={{ lat: Number(station.latitude), lng: Number(station.longitude) }}
+              title={station.stationName}
+              onClick={() => handleStationClick(station)}
+              clickable={true}
+              zIndex={1}
+            />
+          ))}
         </Map>
       </div>
 
       {/* Bottom Sheet */}
-      <BottomSheet contentItemCount={selectedStation ? sortedFilteredRoutes.length : 0}>
+      <BottomSheet contentItemCount={selectedStation ? sortedFilteredRoutes.length : selectedRoute ? routeStations.length : 0}>
         <div className="space-y-4 pb-6">
           {/* Error Message */}
           {errorMessage && (
@@ -336,12 +446,12 @@ function App() {
           )}
 
           {/* Search Tabs */}
-          {!selectedStation && (
+          {!selectedStation && !selectedRoute && (
             <SearchTabs activeTab={searchTab} onTabChange={setSearchTab} />
           )}
 
           {/* Search Input & Quick Actions */}
-          {!selectedStation && (
+          {!selectedStation && !selectedRoute && (
             <div className="space-y-3">
               <SearchInput
                 value={searchTab === "route" ? searchKeyword : stationSearchKeyword}
@@ -357,7 +467,7 @@ function App() {
           )}
 
           {/* Route Search Results */}
-          {searchTab === "route" && isSearching && searchKeyword && !selectedStation && (
+          {searchTab === "route" && isSearching && searchKeyword && !selectedStation && !selectedRoute && (
             <div className="animate-slide-up">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-foreground">
@@ -381,10 +491,11 @@ function App() {
                   />
                 ) : (
                   filteredSearchResults.map(route => (
-                    <Card 
-                      key={route.routeId} 
-                      interactive 
+                    <Card
+                      key={route.routeId}
+                      interactive
                       highlighted={route.climateCardEligible}
+                      onClick={() => handleRouteClick(route)}
                       className="p-3"
                     >
                       <div className="flex items-center gap-3">
@@ -407,7 +518,7 @@ function App() {
           )}
 
           {/* Route Search Empty State */}
-          {searchTab === "route" && !searchKeyword && !selectedStation && (
+          {searchTab === "route" && !searchKeyword && !selectedStation && !selectedRoute && (
             <EmptyState
               icon="search"
               title="버스 노선을 검색해보세요"
@@ -416,26 +527,26 @@ function App() {
           )}
 
           {/* Station Search Results */}
-          {searchTab === "station" && !selectedStation && (
+          {searchTab === "station" && !selectedStation && !selectedRoute && (
             <div className="animate-fade-in">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-foreground">
                   {stationSearchKeyword ? "검색 결과" : "주변 정류장"}
                 </h3>
                 <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                  {filteredStations.length}개
+                  {displayedStations.length}개
                 </span>
               </div>
-              
-              {stationsLoading ? (
+
+              {(stationsLoading || isStationSearching) ? (
                 <div className="space-y-2">
                   <StationCardSkeleton />
                   <StationCardSkeleton />
                   <StationCardSkeleton />
                 </div>
-              ) : filteredStations.length > 0 ? (
+              ) : displayedStations.length > 0 ? (
                 <div className="space-y-2">
-                  {filteredStations.map((station) => (
+                  {displayedStations.map((station) => (
                     <Card
                       key={station.stationId}
                       interactive
@@ -484,8 +595,8 @@ function App() {
           {selectedStation && (
             <div className="animate-slide-up">
               <div className="flex items-center gap-3 mb-4">
-                <button 
-                  onClick={() => setSelectedStation(null)} 
+                <button
+                  onClick={() => setSelectedStation(null)}
                   className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -496,6 +607,22 @@ function App() {
                   <h3 className="font-semibold text-foreground">{selectedStation.stationName}</h3>
                   <p className="text-xs text-muted-foreground">{selectedStation.stationId}</p>
                 </div>
+                <button
+                  onClick={handleRefreshStation}
+                  disabled={routesLoading || arrivalsLoading}
+                  className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                  aria-label="새로고침"
+                >
+                  {routesLoading || arrivalsLoading ? (
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  )}
+                </button>
               </div>
 
               {/* Climate Filter for Station Routes */}
@@ -584,6 +711,79 @@ function App() {
                   icon="route"
                   title="경유 노선이 없습니다"
                   description="이 정류장에는 정차하는 노선이 없어요"
+                />
+              )}
+            </div>
+          )}
+
+          {/* Selected Route Detail */}
+          {selectedRoute && (
+            <div className="animate-slide-up">
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  onClick={() => setSelectedRoute(null)}
+                  className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <div className="flex-1 flex items-center gap-3">
+                  <RouteBadge routeName={selectedRoute.routeName} routeType={selectedRoute.routeType} />
+                  <div>
+                    <h3 className="font-semibold text-foreground">{getRouteTypeName(selectedRoute.routeType)}</h3>
+                    <ClimateEligibilityBadge eligible={selectedRoute.climateCardEligible} />
+                  </div>
+                </div>
+              </div>
+
+              {routeStationsLoading ? (
+                <div className="space-y-2">
+                  <StationCardSkeleton />
+                  <StationCardSkeleton />
+                  <StationCardSkeleton />
+                </div>
+              ) : routeStations.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-muted-foreground">
+                      경유 정류장
+                    </p>
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
+                      {routeStations.length}개
+                    </span>
+                  </div>
+                  {routeStations.map((station, index) => (
+                    <Card
+                      key={station.stationId}
+                      interactive
+                      onClick={() => handleStationClick(station)}
+                      className="p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-primary">{index + 1}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-foreground truncate">
+                            {station.stationName}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {station.stationId}
+                          </div>
+                        </div>
+                        <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon="station"
+                  title="정류장 정보가 없습니다"
+                  description="이 노선의 정류장 정보를 불러올 수 없어요"
                 />
               )}
             </div>
