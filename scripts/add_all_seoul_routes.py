@@ -54,7 +54,7 @@ def main():
     print("=" * 60)
 
     # Excel 파일 읽기
-    excel_file = '/Users/david/Desktop/기후동행/서울시버스노선ID정보(20251209).xlsx'
+    excel_file = '/Users/david/Desktop/기후동행/data/서울시버스노선ID정보(20251209).xlsx'
 
     print(f"\n📊 Reading {excel_file}...")
     df = pd.read_excel(excel_file)

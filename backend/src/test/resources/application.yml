@@ -1,20 +1,20 @@
 # 테스트용 Spring Boot 설정
 
 spring:
-  # H2 In-Memory Database (PostGIS 함수 제외)
+  # PostgreSQL 사용 (로컬 도커 컨테이너)
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:postgresql://localhost:5432/climate_transport
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: 1q2w
 
   # JPA 설정
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate  # 테스트에서도 실제 스키마 사용
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
         format_sql: true
     show-sql: false
 
@@ -34,12 +34,13 @@ public-api:
   base-url: http://localhost:8080
 
 seoul-api:
-  key: test-key
+  service-key: test-key
   base-url: http://localhost:8080
 
 # 관리자 API 키 (테스트용)
 admin:
-  api-key: test-admin-key
+  api:
+    key: test-admin-key
 
 # Sentry 비활성화
 sentry:

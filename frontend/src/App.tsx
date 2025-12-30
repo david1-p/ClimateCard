@@ -13,6 +13,7 @@ import { arrivalApi } from "./api/arrival";
 import type { Station, Route, BusArrival } from "./types/index";
 import { logger } from "./utils/logger";
 import { getRouteTypeName } from "./utils/busTypes";
+import { formatArrivalMessage, getArrivalTextClass } from "./utils/arrivalFormatter";
 
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.9780 };
 const DEFAULT_SEARCH_RADIUS = 500; // 주변 정류소 검색 반경 (미터)
@@ -51,6 +52,9 @@ function App() {
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [routeStations, setRouteStations] = useState<Station[]>([]);
   const [routeStationsLoading, setRouteStationsLoading] = useState(false);
+
+  // Sorting state
+  const [sortBy, setSortBy] = useState<'arrivalTime' | 'routeOrder'>('arrivalTime');
 
   // Get user location
   useEffect(() => {
@@ -210,6 +214,8 @@ function App() {
     } catch (err) {
       logger.error("❌ Failed to search routes:", err);
       setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -273,33 +279,49 @@ function App() {
     ? routes.filter(r => r.climateCardEligible)
     : routes;
 
-  // 도착 정보 기반으로 노선 정렬 (차고지/출발대기는 아래로)
+  // 노선 정렬 (도착시간별 또는 노선순서별)
   const sortedFilteredRoutes = [...filteredRoutes].sort((a, b) => {
     const arrivalA = arrivals.find(arr => arr.routeId === a.routeId);
     const arrivalB = arrivals.find(arr => arr.routeId === b.routeId);
 
-    // 차고지/출발대기 키워드
-    const waitingKeywords = ['차고지', '출발대기', '회차', '운행종료', '회차대기'];
+    if (sortBy === 'routeOrder') {
+      // 노선순서별 정렬 (staOrd 기준)
+      const staOrdA = arrivalA?.staOrd ?? 999999;
+      const staOrdB = arrivalB?.staOrd ?? 999999;
+      return staOrdA - staOrdB;
+    } else {
+      // 도착시간별 정렬 (기존 로직)
+      // 차고지/출발대기 키워드
+      const waitingKeywords = ['차고지', '출발대기', '회차', '운행종료', '회차대기'];
 
-    const isWaitingA = arrivalA && (
-      waitingKeywords.some(keyword => arrivalA.arrmsg1?.includes(keyword) || arrivalA.arrmsg2?.includes(keyword))
-    );
-    const isWaitingB = arrivalB && (
-      waitingKeywords.some(keyword => arrivalB.arrmsg1?.includes(keyword) || arrivalB.arrmsg2?.includes(keyword))
-    );
+      const isWaitingA = arrivalA && (
+        waitingKeywords.some(keyword => arrivalA.arrmsg1?.includes(keyword) || arrivalA.arrmsg2?.includes(keyword))
+      );
+      const isWaitingB = arrivalB && (
+        waitingKeywords.some(keyword => arrivalB.arrmsg1?.includes(keyword) || arrivalB.arrmsg2?.includes(keyword))
+      );
 
-    // 둘 다 대기 중이면 원래 순서 유지
-    if (isWaitingA && isWaitingB) return 0;
-    // A만 대기 중이면 A를 아래로
-    if (isWaitingA) return 1;
-    // B만 대기 중이면 B를 아래로
-    if (isWaitingB) return -1;
+      // 둘 다 대기 중이면 원래 순서 유지
+      if (isWaitingA && isWaitingB) return 0;
+      // A만 대기 중이면 A를 아래로
+      if (isWaitingA) return 1;
+      // B만 대기 중이면 B를 아래로
+      if (isWaitingB) return -1;
 
-    // 도착 정보가 있는 것을 위로
-    if (arrivalA && !arrivalB) return -1;
-    if (!arrivalA && arrivalB) return 1;
+      // 도착 시간 기준 정렬 (traTime1 사용)
+      const timeA = arrivalA?.traTime1 ?? 999999;
+      const timeB = arrivalB?.traTime1 ?? 999999;
 
-    return 0;
+      if (timeA !== timeB) {
+        return timeA - timeB;
+      }
+
+      // 도착 정보가 있는 것을 위로
+      if (arrivalA && !arrivalB) return -1;
+      if (!arrivalA && arrivalB) return 1;
+
+      return 0;
+    }
   });
 
   // Handle route click (from search results)
@@ -467,7 +489,7 @@ function App() {
           )}
 
           {/* Route Search Results */}
-          {searchTab === "route" && isSearching && searchKeyword && !selectedStation && !selectedRoute && (
+          {searchTab === "route" && searchKeyword && !selectedStation && !selectedRoute && (
             <div className="animate-slide-up">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-foreground">
@@ -478,11 +500,17 @@ function App() {
                 </span>
               </div>
               <div className="space-y-2">
-                {searchResults.length === 0 ? (
+                {isSearching ? (
                   <>
                     <SearchResultSkeleton />
                     <SearchResultSkeleton />
                   </>
+                ) : searchResults.length === 0 ? (
+                  <EmptyState
+                    icon="route"
+                    title="검색 결과가 없습니다"
+                    description="다른 노선번호로 검색해보세요"
+                  />
                 ) : filteredSearchResults.length === 0 ? (
                   <EmptyState
                     icon="route"
@@ -646,9 +674,33 @@ function App() {
                     <p className="text-xs text-muted-foreground">
                       경유 노선
                     </p>
-                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                      {sortedFilteredRoutes.length}개
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex bg-secondary rounded-md p-0.5">
+                        <button
+                          onClick={() => setSortBy('arrivalTime')}
+                          className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+                            sortBy === 'arrivalTime'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          도착시간순
+                        </button>
+                        <button
+                          onClick={() => setSortBy('routeOrder')}
+                          className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
+                            sortBy === 'routeOrder'
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          노선순서순
+                        </button>
+                      </div>
+                      <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
+                        {sortedFilteredRoutes.length}개
+                      </span>
+                    </div>
                   </div>
                   {sortedFilteredRoutes.map(route => {
                     const arrival = arrivals.find(a => a.routeId === route.routeId);
@@ -672,8 +724,8 @@ function App() {
                             <div className="flex flex-col gap-1 text-right min-w-0">
                               {arrival.arrmsg1 ? (
                                 <div className="flex items-center gap-1.5 justify-end">
-                                  <span className="text-[11px] text-foreground font-medium truncate max-w-[120px]">
-                                    {arrival.arrmsg1}
+                                  <span className={getArrivalTextClass(arrival.traTime1, arrival.arrmsg1)}>
+                                    {formatArrivalMessage(arrival.arrmsg1)}
                                   </span>
                                   {arrival.isLast1 === '1' && (
                                     <span className="text-destructive text-[9px] font-bold bg-destructive/10 px-1 py-0.5 rounded shrink-0">막차</span>
@@ -682,8 +734,8 @@ function App() {
                               ) : null}
                               {arrival.arrmsg2 ? (
                                 <div className="flex items-center gap-1.5 justify-end">
-                                  <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">
-                                    {arrival.arrmsg2}
+                                  <span className={getArrivalTextClass(arrival.traTime2, arrival.arrmsg2)}>
+                                    {formatArrivalMessage(arrival.arrmsg2)}
                                   </span>
                                   {arrival.isLast2 === '1' && (
                                     <span className="text-destructive text-[9px] font-bold bg-destructive/10 px-1 py-0.5 rounded shrink-0">막차</span>
