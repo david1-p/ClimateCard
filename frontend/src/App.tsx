@@ -728,7 +728,7 @@ function App() {
                                     {formatArrivalMessage(arrival.arrmsg1)}
                                   </span>
                                   {arrival.isLast1 === '1' && (
-                                    <span className="text-destructive text-[9px] font-bold bg-destructive/10 px-1 py-0.5 rounded shrink-0">막차</span>
+                                    <span className="text-destructive text-[10px] font-extrabold bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">막차</span>
                                   )}
                                 </div>
                               ) : null}
@@ -738,7 +738,7 @@ function App() {
                                     {formatArrivalMessage(arrival.arrmsg2)}
                                   </span>
                                   {arrival.isLast2 === '1' && (
-                                    <span className="text-destructive text-[9px] font-bold bg-destructive/10 px-1 py-0.5 rounded shrink-0">막차</span>
+                                    <span className="text-destructive text-[10px] font-extrabold bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">막차</span>
                                   )}
                                 </div>
                               ) : null}

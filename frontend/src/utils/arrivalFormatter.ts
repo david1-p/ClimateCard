@@ -47,7 +47,7 @@ export function getArrivalTextClass(traTime: number | null, message: string): st
   const baseClass = 'text-[11px] font-medium truncate max-w-[120px]';
 
   if (isUrgentArrival(traTime, message)) {
-    return `${baseClass} text-red-600 font-bold`;
+    return `${baseClass} text-red-600 font-extrabold`;
   }
 
   return `${baseClass} text-foreground`;
