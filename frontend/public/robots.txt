@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://기후동행.site/sitemap.xml
