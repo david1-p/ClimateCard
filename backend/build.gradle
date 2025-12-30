@@ -61,9 +61,6 @@ dependencies {
     
     // XML Parsing (공공데이터)
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
-
-	// Sentry (에러 추적 & 성능 모니터링)
-	implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.0.0'
 }
 
 tasks.named('test') {

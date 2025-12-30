@@ -89,21 +89,12 @@ admin:
   api:
     key: ${ADMIN_API_KEY}  # 필수 환경변수 (기본값 없음, 보안 강화)
 
-# Sentry (에러 추적 & 모니터링)
-sentry:
-  dsn: ${SENTRY_DSN:}  # Sentry DSN (비어있으면 비활성화)
-  environment: ${SPRING_PROFILES_ACTIVE:dev}
-  traces-sample-rate: 1.0  # 성능 모니터링 (100%)
-  enable-tracing: true
-  send-default-pii: false  # 개인정보 전송 비활성화
-
 # Logging (기본 설정 - 프로필별 오버라이드)
 logging:
   level:
     com.climate.transport: INFO
     org.springframework.web: INFO
     org.springframework.security: INFO
-    io.sentry: WARN
 
 ---
 # 개발 환경 설정

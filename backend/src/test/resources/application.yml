@@ -42,11 +42,6 @@ admin:
   api:
     key: test-admin-key
 
-# Sentry 비활성화
-sentry:
-  dsn: ""
-  enabled: false
-
 # 로깅
 logging:
   level:

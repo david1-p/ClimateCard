@@ -42,7 +42,7 @@ const BottomSheet = ({ children, contentItemCount = 0 }: BottomSheetProps) => {
     full: "8vh",     // Show ~92% (leave space for status bar)
   };
 
-  const onDragEnd = useCallback((_: any, info: PanInfo) => {
+  const onDragEnd = useCallback((_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const { offset, velocity } = info;
     const threshold = 50;
     const velocityThreshold = 300;

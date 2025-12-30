@@ -15,7 +15,7 @@ export const logger = {
   /**
    * 일반 로그 (개발 환경에서만 출력)
    */
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     if (isDev) {
       console.log(...args);
     }
@@ -23,19 +23,17 @@ export const logger = {
 
   /**
    * 에러 로그 (개발 환경에서만 출력)
-   * 프로덕션에서는 Sentry로 전송
    */
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     if (isDev) {
       console.error(...args);
     }
-    // 프로덕션에서는 Sentry가 자동으로 캡처
   },
 
   /**
    * 경고 로그 (개발 환경에서만 출력)
    */
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     if (isDev) {
       console.warn(...args);
     }
@@ -44,7 +42,7 @@ export const logger = {
   /**
    * 디버그 로그 (개발 환경에서만 출력)
    */
-  debug: (...args: any[]) => {
+  debug: (...args: unknown[]) => {
     if (isDev) {
       console.debug(...args);
     }

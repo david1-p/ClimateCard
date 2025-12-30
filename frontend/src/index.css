@@ -37,7 +37,7 @@
   --bus-circulation: 48 96% 53%; /* 순환 (노랑) */
   --bus-wide: 0 72% 51%; /* 광역 (빨강) */
   --bus-wide-express: 0 84% 45%; /* 광역급행 (진한빨강) */
-  --bus-village: 142 50% 45%; /* 마을 (연두) */
+  --bus-village: 142 70% 40%; /* 마을 (초록) */
   --bus-airport: 38 92% 50%; /* 공항 (주황) */
   --bus-night: 217 91% 50%; /* 심야 (파랑) */
   --bus-default: 215 16% 47%; /* 기타 (회색) */
@@ -133,6 +133,17 @@ body {
   100% { background-position: 200% 0; }
 }
 
+@keyframes pulse-arriving {
+  0%, 100% {
+    background-color: hsl(0 0% 100%);
+    border-color: hsl(var(--border));
+  }
+  50% {
+    background-color: hsl(0 72% 51% / 0.08);
+    border-color: hsl(0 72% 51% / 0.3);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
@@ -143,6 +154,10 @@ body {
 
 .animate-pulse-soft {
   animation: pulse-soft 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-arriving {
+  animation: pulse-arriving 2s ease-in-out infinite;
 }
 
 /* Skeleton loading effect */

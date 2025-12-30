@@ -1,5 +1,5 @@
 import { Map, MapMarker, useKakaoLoader } from "react-kakao-maps-sdk"
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import BottomSheet from "./components/Layout/BottomSheet";
 import { Card, RouteBadge, ClimateEligibilityBadge } from "./components/ui/Card";
 import { StationCardSkeleton, RouteCardSkeleton, SearchResultSkeleton } from "./components/ui/Skeleton";
@@ -7,16 +7,18 @@ import { SearchTabs } from "./components/ui/SearchTabs";
 import { SearchInput } from "./components/ui/SearchInput";
 import { QuickActions } from "./components/ui/QuickActions";
 import { EmptyState } from "./components/ui/EmptyState";
-import { stationApi } from "./api/station";
-import { routeApi } from "./api/route";
-import { arrivalApi } from "./api/arrival";
-import type { Station, Route, BusArrival } from "./types/index";
+import type { Station, Route } from "./types/index";
 import { logger } from "./utils/logger";
 import { getRouteTypeName } from "./utils/busTypes";
 import { formatArrivalMessage, getArrivalTextClass } from "./utils/arrivalFormatter";
-
-const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.9780 };
-const DEFAULT_SEARCH_RADIUS = 500; // 주변 정류소 검색 반경 (미터)
+import { stationApi } from "./api/station";
+import { arrivalApi } from "./api/arrival";
+import { routeApi } from "./api/route";
+import { useGeolocation } from "./hooks/useGeolocation";
+import { useStations } from "./hooks/useStations";
+import { useRoutes } from "./hooks/useRoutes";
+import { useArrivals } from "./hooks/useArrivals";
+import { useSearch } from "./hooks/useSearch";
 
 function App() {
   const appKey = import.meta.env.VITE_KAKAO_APP_KEY;
@@ -27,90 +29,50 @@ function App() {
     libraries: ["services", "clusterer"],
   });
 
-  const [center, setCenter] = useState(SEOUL_CITY_HALL);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
-  const [routes, setRoutes] = useState<Route[]>([]);
-  const [routesLoading, setRoutesLoading] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [searchResults, setSearchResults] = useState<Route[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [stationsLoading, setStationsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [arrivals, setArrivals] = useState<BusArrival[]>([]);
-  const [arrivalsLoading, setArrivalsLoading] = useState(false);
+  // Custom Hooks
+  const { userLocation, center, setCenter, errorMessage, setErrorMessage } = useGeolocation();
+  const {
+    stations,
+    selectedStation,
+    setSelectedStation,
+    stationsLoading,
+    stationSearchKeyword,
+    setStationSearchKeyword,
+    stationSearchResults,
+    setStationSearchResults,
+    isStationSearching,
+    setIsStationSearching,
+    fetchNearbyStations,
+  } = useStations();
+  const {
+    routes,
+    setRoutes,
+    routesLoading,
+    setRoutesLoading,
+    searchKeyword,
+    setSearchKeyword,
+    searchResults,
+    setSearchResults,
+    isSearching,
+    setIsSearching,
+    climateOnly,
+    setClimateOnly,
+    selectedRoute,
+    setSelectedRoute,
+    routeStations,
+    setRouteStations,
+    routeStationsLoading,
+    setRouteStationsLoading,
+    sortBy,
+    setSortBy,
+  } = useRoutes();
+  const { arrivals, setArrivals, arrivalsLoading, setArrivalsLoading } = useArrivals();
+  const { searchTab, setSearchTab } = useSearch();
 
-  // New state for improved UI
-  const [searchTab, setSearchTab] = useState<"route" | "station">("route");
-  const [stationSearchKeyword, setStationSearchKeyword] = useState("");
-  const [stationSearchResults, setStationSearchResults] = useState<Station[]>([]);
-  const [isStationSearching, setIsStationSearching] = useState(false);
-  const [climateOnly, setClimateOnly] = useState(false);
-
-  // Route detail state
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-  const [routeStations, setRouteStations] = useState<Station[]>([]);
-  const [routeStationsLoading, setRouteStationsLoading] = useState(false);
-
-  // Sorting state
-  const [sortBy, setSortBy] = useState<'arrivalTime' | 'routeOrder'>('arrivalTime');
-
-  // Get user location
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const newPos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setCenter(newPos);
-          setUserLocation(newPos);
-          logger.log(`📍 User location: ${newPos.lat}, ${newPos.lng}`);
-        },
-        (err) => {
-          logger.error("Geolocation error:", err);
-
-          // 위치 권한 거부 시 사용자에게 알림
-          if (err.code === err.PERMISSION_DENIED) {
-            setErrorMessage("위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.");
-          } else if (err.code === err.TIMEOUT) {
-            setErrorMessage("위치 정보를 가져오는 데 시간이 너무 오래 걸립니다.");
-          } else {
-            setErrorMessage("위치 정보를 가져올 수 없습니다.");
-          }
-        },
-        {
-          enableHighAccuracy: true, // GPS 사용 (iPhone에서 중요)
-          timeout: 5000, // 5초 타임아웃
-          maximumAge: 0 // 캐시된 위치 사용 안 함
-        }
-      );
-    }
-  }, []);
-
-  // Fetch nearby stations
-  const fetchNearbyStations = async (lat: number, lng: number) => {
-    logger.log(`🔍 Fetching stations near: ${lat}, ${lng}`);
-    setStationsLoading(true);
-    setErrorMessage(null);
-    try {
-      const data = await stationApi.getNearbyStations(lat, lng, DEFAULT_SEARCH_RADIUS);
-      logger.log(`✅ Found ${data.length} stations:`, data);
-      setStations(data);
-    } catch (err) {
-      logger.error("❌ Failed to fetch stations:", err);
-      setErrorMessage("정류장 정보를 불러오는데 실패했습니다.");
-      setStations([]);
-    } finally {
-      setStationsLoading(false);
-    }
-  };
-
+  // Fetch nearby stations when center changes
   useEffect(() => {
     fetchNearbyStations(center.lat, center.lng);
-  }, [center]);
+  }, [center, fetchNearbyStations]);
 
   // Handle station click
   const handleStationClick = async (station: Station) => {
@@ -398,55 +360,9 @@ function App() {
     window.open(openChatUrl, '_blank');
   };
 
-  return (
-    <div className="w-full h-screen relative overflow-hidden bg-background">
-      {/* 문의 버튼 */}
-      <button
-        onClick={handleOpenChat}
-        className="absolute top-6 left-6 z-50 w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all duration-200"
-        aria-label="카카오톡 오픈챗 문의"
-      >
-        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      </button>
-
-      {/* Map Area */}
-      <div className="w-full h-full pt-4 pl-4 pr-4">
-        <Map
-          center={center}
-          style={{ width: "100%", height: "100%" }}
-          level={3}
-          isPanto={false}
-          onDragEnd={handleDragEnd}
-          ref={mapRef}
-        >
-          {userLocation && (
-            <MapMarker
-              position={{ lat: userLocation.lat, lng: userLocation.lng }}
-              image={{
-                src: "/marker.png",
-                size: { width: 40, height: 60 },
-              }}
-            />
-          )}
-
-          {stations.map((station) => (
-            <MapMarker
-              key={`station-${station.stationId}`}
-              position={{ lat: Number(station.latitude), lng: Number(station.longitude) }}
-              title={station.stationName}
-              onClick={() => handleStationClick(station)}
-              clickable={true}
-              zIndex={1}
-            />
-          ))}
-        </Map>
-      </div>
-
-      {/* Bottom Sheet */}
-      <BottomSheet contentItemCount={selectedStation ? sortedFilteredRoutes.length : selectedRoute ? routeStations.length : 0}>
-        <div className="space-y-4 pb-6">
+  // SearchPanel 컴포넌트 (데스크탑과 모바일에서 공유)
+  const searchPanelContent = (
+    <div className="space-y-4 pb-6">
           {/* Error Message */}
           {errorMessage && (
             <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20 animate-fade-in">
@@ -704,11 +620,16 @@ function App() {
                   </div>
                   {sortedFilteredRoutes.map(route => {
                     const arrival = arrivals.find(a => a.routeId === route.routeId);
+                    // "곧 도착" 체크
+                    const isArriving = arrival && (
+                      arrival.arrmsg1?.includes('곧 도착') ||
+                      arrival.arrmsg2?.includes('곧 도착')
+                    );
                     return (
                       <Card
                         key={route.routeId}
                         highlighted={route.climateCardEligible}
-                        className="p-3"
+                        className={`p-3 ${isArriving ? 'animate-pulse-arriving' : ''}`}
                       >
                         <div className="flex items-center gap-3">
                           <RouteBadge routeName={route.routeName} routeType={route.routeType} size="sm" />
@@ -840,8 +761,78 @@ function App() {
               )}
             </div>
           )}
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Desktop Search Panel - 왼쪽 고정 패널 */}
+      <div className="hidden lg:flex lg:flex-col lg:w-96 xl:w-[28rem] bg-card border-r border-border shadow-lg">
+        {/* Header */}
+        <div className="p-4 border-b border-border shrink-0">
+          <h1 className="text-lg font-bold text-foreground">기후동행카드 조회</h1>
+          <p className="text-xs text-muted-foreground mt-1">버스 노선 및 정류장 검색</p>
         </div>
-      </BottomSheet>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4">
+          {searchPanelContent}
+        </div>
+      </div>
+
+      {/* Map + Mobile Bottom Sheet */}
+      <div className="flex-1 relative">
+        {/* 문의 버튼 */}
+        <button
+          onClick={handleOpenChat}
+          className="absolute top-6 left-6 z-50 w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all duration-200"
+          aria-label="카카오톡 오픈챗 문의"
+        >
+          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </button>
+
+        {/* Map Area */}
+        <div className="w-full h-full lg:p-4 p-4">
+          <Map
+            center={center}
+            style={{ width: "100%", height: "100%" }}
+            level={3}
+            isPanto={false}
+            onDragEnd={handleDragEnd}
+            ref={mapRef}
+          >
+            {userLocation && (
+              <MapMarker
+                position={{ lat: userLocation.lat, lng: userLocation.lng }}
+                image={{
+                  src: "/marker.png",
+                  size: { width: 40, height: 60 },
+                }}
+              />
+            )}
+
+            {stations.map((station) => (
+              <MapMarker
+                key={`station-${station.stationId}`}
+                position={{ lat: Number(station.latitude), lng: Number(station.longitude) }}
+                title={station.stationName}
+                onClick={() => handleStationClick(station)}
+                clickable={true}
+                zIndex={1}
+              />
+            ))}
+          </Map>
+        </div>
+
+        {/* Mobile Bottom Sheet */}
+        <div className="lg:hidden">
+          <BottomSheet contentItemCount={selectedStation ? sortedFilteredRoutes.length : selectedRoute ? routeStations.length : 0}>
+            {searchPanelContent}
+          </BottomSheet>
+        </div>
+      </div>
     </div>
   );
 }
