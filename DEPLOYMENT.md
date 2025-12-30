@@ -183,4 +183,4 @@ docker stats
 ## 지원
 
 - GitHub: https://github.com/david1-p/ClimateCard
-- 카카오톡: https://open.kakao.com/o/sJ6WrK8h
+- 카카오톡: https://open.kakao.com/o/sMFxZ48h
