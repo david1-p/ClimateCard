@@ -309,6 +309,10 @@ function App() {
 
   // Handle nearby button click
   const handleNearbyClick = () => {
+    // 검색 키워드 초기화 (주변 정류장을 표시하기 위함)
+    setStationSearchKeyword("");
+    setStationSearchResults([]);
+
     if (userLocation) {
       // 이미 위치를 가져온 경우 해당 위치로 이동
       setCenter(userLocation);
