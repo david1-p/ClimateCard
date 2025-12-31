@@ -546,7 +546,7 @@ function App() {
 
           {/* Selected Station Detail */}
           {selectedStation && (
-            <div className="animate-slide-up">
+            <div className="animate-slide-up pt-4">
               <div className="flex items-center gap-3 mb-4">
                 <button
                   onClick={() => setSelectedStation(null)}
@@ -701,7 +701,7 @@ function App() {
 
           {/* Selected Route Detail */}
           {selectedRoute && (
-            <div className="animate-slide-up">
+            <div className="animate-slide-up pt-4">
               <div className="flex items-center gap-3 mb-4">
                 <button
                   onClick={() => setSelectedRoute(null)}
