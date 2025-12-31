@@ -4,22 +4,31 @@ interface QuickActionsProps {
   onNearbyClick: () => void;
   onClimateOnlyClick: () => void;
   climateOnly: boolean;
+  isLoadingLocation?: boolean;
 }
 
-export const QuickActions = ({ onNearbyClick, onClimateOnlyClick, climateOnly }: QuickActionsProps) => {
+export const QuickActions = ({ onNearbyClick, onClimateOnlyClick, climateOnly, isLoadingLocation = false }: QuickActionsProps) => {
   return (
     <div className="flex gap-2">
       <button
         onClick={onNearbyClick}
+        disabled={isLoadingLocation}
         className={clsx(
-          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium",
-          "bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
+          "bg-primary/10 text-primary hover:bg-primary/20",
+          isLoadingLocation && "opacity-50 cursor-not-allowed"
         )}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-        </svg>
-        내 주변
+        {isLoadingLocation ? (
+          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          </svg>
+        )}
+        {isLoadingLocation ? "위치 확인 중..." : "내 주변"}
       </button>
       <button
         onClick={onClimateOnlyClick}

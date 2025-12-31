@@ -30,7 +30,7 @@ function App() {
   });
 
   // Custom Hooks
-  const { userLocation, center, setCenter, errorMessage, setErrorMessage } = useGeolocation();
+  const { userLocation, center, setCenter, errorMessage, setErrorMessage, requestUserLocation, isLoadingLocation } = useGeolocation();
   const {
     stations,
     selectedStation,
@@ -310,10 +310,14 @@ function App() {
   // Handle nearby button click
   const handleNearbyClick = () => {
     if (userLocation) {
+      // 이미 위치를 가져온 경우 해당 위치로 이동
       setCenter(userLocation);
       if (mapRef.current) {
         mapRef.current.setCenter(new kakao.maps.LatLng(userLocation.lat, userLocation.lng));
       }
+    } else {
+      // 아직 위치를 가져오지 않은 경우 위치 요청 (사용자 제스처에 의해 호출됨)
+      requestUserLocation();
     }
   };
 
@@ -400,6 +404,7 @@ function App() {
                 onNearbyClick={handleNearbyClick}
                 onClimateOnlyClick={() => setClimateOnly(!climateOnly)}
                 climateOnly={climateOnly}
+                isLoadingLocation={isLoadingLocation}
               />
             </div>
           )}
@@ -575,6 +580,7 @@ function App() {
                   onNearbyClick={handleNearbyClick}
                   onClimateOnlyClick={() => setClimateOnly(!climateOnly)}
                   climateOnly={climateOnly}
+                  isLoadingLocation={isLoadingLocation}
                 />
               </div>
 
@@ -813,7 +819,7 @@ function App() {
               />
             )}
 
-            {stations.map((station) => (
+            {displayedStations.map((station) => (
               <MapMarker
                 key={`station-${station.stationId}`}
                 position={{ lat: Number(station.latitude), lng: Number(station.longitude) }}
