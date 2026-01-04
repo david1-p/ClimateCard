@@ -364,413 +364,411 @@ function App() {
 
   const handleOpenChat = () => {
     // 카카오톡 오픈챗 URL (환경변수로 설정 가능)
-    const openChatUrl = import.meta.env.VITE_KAKAO_OPENCHAT_URL || 'https://open.kakao.com/o/your-openchat-link';
+    const openChatUrl = import.meta.env.VITE_KAKAO_OPENCHAT_URL || 'https://open.kakao.com/o/sMFxZ48h ';
     window.open(openChatUrl, '_blank');
   };
 
   // SearchPanel 컴포넌트 (데스크탑과 모바일에서 공유)
   const searchPanelContent = (
     <div className="space-y-4 pb-6">
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20 animate-fade-in">
-              <div className="w-8 h-8 rounded-lg bg-destructive/20 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-destructive">{errorMessage}</p>
-                <button
-                  onClick={() => setErrorMessage(null)}
-                  className="text-xs text-destructive/70 hover:text-destructive mt-1 font-medium"
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20 animate-fade-in">
+          <div className="w-8 h-8 rounded-lg bg-destructive/20 flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-destructive">{errorMessage}</p>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="text-xs text-destructive/70 hover:text-destructive mt-1 font-medium"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Search Tabs */}
+      {!selectedStation && !selectedRoute && (
+        <SearchTabs activeTab={searchTab} onTabChange={setSearchTab} />
+      )}
+
+      {/* Search Input & Quick Actions */}
+      {!selectedStation && !selectedRoute && (
+        <div className="space-y-3">
+          <SearchInput
+            value={searchTab === "route" ? searchKeyword : stationSearchKeyword}
+            onChange={searchTab === "route" ? setSearchKeyword : setStationSearchKeyword}
+            placeholder={searchTab === "route" ? "버스 노선번호 검색 (예: 421, 7016)" : "정류장 이름 검색"}
+          />
+          <QuickActions
+            onNearbyClick={handleNearbyClick}
+            onClimateOnlyClick={() => setClimateOnly(!climateOnly)}
+            climateOnly={climateOnly}
+            isLoadingLocation={isLoadingLocation}
+          />
+        </div>
+      )}
+
+      {/* Route Search Results */}
+      {searchTab === "route" && searchKeyword && !selectedStation && !selectedRoute && (
+        <div className="animate-slide-up">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">
+              검색 결과
+            </h3>
+            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
+              {filteredSearchResults.length}개
+            </span>
+          </div>
+          <div className="space-y-2">
+            {isSearching ? (
+              <>
+                <SearchResultSkeleton />
+                <SearchResultSkeleton />
+              </>
+            ) : searchResults.length === 0 ? (
+              <EmptyState
+                icon="route"
+                title="검색 결과가 없습니다"
+                description="다른 노선번호로 검색해보세요"
+              />
+            ) : filteredSearchResults.length === 0 ? (
+              <EmptyState
+                icon="route"
+                title="기후동행카드 노선이 없습니다"
+                description="필터를 해제하고 다시 검색해보세요"
+              />
+            ) : (
+              filteredSearchResults.map(route => (
+                <Card
+                  key={route.routeId}
+                  interactive
+                  highlighted={route.climateCardEligible}
+                  onClick={() => handleRouteClick(route)}
+                  className="p-3"
                 >
-                  닫기
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Search Tabs */}
-          {!selectedStation && !selectedRoute && (
-            <SearchTabs activeTab={searchTab} onTabChange={setSearchTab} />
-          )}
-
-          {/* Search Input & Quick Actions */}
-          {!selectedStation && !selectedRoute && (
-            <div className="space-y-3">
-              <SearchInput
-                value={searchTab === "route" ? searchKeyword : stationSearchKeyword}
-                onChange={searchTab === "route" ? setSearchKeyword : setStationSearchKeyword}
-                placeholder={searchTab === "route" ? "버스 노선번호 검색 (예: 421, 7016)" : "정류장 이름 검색"}
-              />
-              <QuickActions
-                onNearbyClick={handleNearbyClick}
-                onClimateOnlyClick={() => setClimateOnly(!climateOnly)}
-                climateOnly={climateOnly}
-                isLoadingLocation={isLoadingLocation}
-              />
-            </div>
-          )}
-
-          {/* Route Search Results */}
-          {searchTab === "route" && searchKeyword && !selectedStation && !selectedRoute && (
-            <div className="animate-slide-up">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-foreground">
-                  검색 결과
-                </h3>
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                  {filteredSearchResults.length}개
-                </span>
-              </div>
-              <div className="space-y-2">
-                {isSearching ? (
-                  <>
-                    <SearchResultSkeleton />
-                    <SearchResultSkeleton />
-                  </>
-                ) : searchResults.length === 0 ? (
-                  <EmptyState
-                    icon="route"
-                    title="검색 결과가 없습니다"
-                    description="다른 노선번호로 검색해보세요"
-                  />
-                ) : filteredSearchResults.length === 0 ? (
-                  <EmptyState
-                    icon="route"
-                    title="기후동행카드 노선이 없습니다"
-                    description="필터를 해제하고 다시 검색해보세요"
-                  />
-                ) : (
-                  filteredSearchResults.map(route => (
-                    <Card
-                      key={route.routeId}
-                      interactive
-                      highlighted={route.climateCardEligible}
-                      onClick={() => handleRouteClick(route)}
-                      className="p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <RouteBadge routeName={route.routeName} routeType={route.routeType} />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs text-muted-foreground">
-                            {getRouteTypeName(route.routeType)}
-                          </div>
-                          <ClimateEligibilityBadge eligible={route.climateCardEligible} />
-                        </div>
-                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
+                  <div className="flex items-center gap-3">
+                    <RouteBadge routeName={route.routeName} routeType={route.routeType} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-muted-foreground">
+                        {getRouteTypeName(route.routeType)}
                       </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+                      <ClimateEligibilityBadge eligible={route.climateCardEligible} />
+                    </div>
+                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
-          {/* Route Search Empty State */}
-          {searchTab === "route" && !searchKeyword && !selectedStation && !selectedRoute && (
+      {/* Route Search Empty State */}
+      {searchTab === "route" && !searchKeyword && !selectedStation && !selectedRoute && (
+        <EmptyState
+          icon="search"
+          title="버스 노선을 검색해보세요"
+          description="노선번호를 입력하면 기후동행카드 사용 가능 여부를 확인할 수 있어요"
+        />
+      )}
+
+      {/* Station Search Results */}
+      {searchTab === "station" && !selectedStation && !selectedRoute && (
+        <div className="animate-fade-in">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">
+              {stationSearchKeyword ? "검색 결과" : "주변 정류장"}
+            </h3>
+            <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
+              {displayedStations.length}개
+            </span>
+          </div>
+
+          {(stationsLoading || isStationSearching) ? (
+            <div className="space-y-2">
+              <StationCardSkeleton />
+              <StationCardSkeleton />
+              <StationCardSkeleton />
+            </div>
+          ) : displayedStations.length > 0 ? (
+            <div className="space-y-2">
+              {displayedStations.map((station) => (
+                <Card
+                  key={station.stationId}
+                  interactive
+                  onClick={() => handleStationClick(station)}
+                  className="p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-foreground truncate">
+                        {station.stationName}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{station.stationId}</span>
+                        {station.distance && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                            <span>{Math.round(station.distance)}m</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
             <EmptyState
-              icon="search"
-              title="버스 노선을 검색해보세요"
-              description="노선번호를 입력하면 기후동행카드 사용 가능 여부를 확인할 수 있어요"
+              icon="station"
+              title={stationSearchKeyword ? "검색 결과가 없습니다" : "주변 정류장이 없습니다"}
+              description={stationSearchKeyword ? "다른 이름으로 검색해보세요" : "지도를 이동하여 다른 지역을 확인해보세요"}
             />
           )}
+        </div>
+      )}
 
-          {/* Station Search Results */}
-          {searchTab === "station" && !selectedStation && !selectedRoute && (
-            <div className="animate-fade-in">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-foreground">
-                  {stationSearchKeyword ? "검색 결과" : "주변 정류장"}
-                </h3>
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                  {displayedStations.length}개
-                </span>
-              </div>
-
-              {(stationsLoading || isStationSearching) ? (
-                <div className="space-y-2">
-                  <StationCardSkeleton />
-                  <StationCardSkeleton />
-                  <StationCardSkeleton />
-                </div>
-              ) : displayedStations.length > 0 ? (
-                <div className="space-y-2">
-                  {displayedStations.map((station) => (
-                    <Card
-                      key={station.stationId}
-                      interactive
-                      onClick={() => handleStationClick(station)}
-                      className="p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
-                          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-foreground truncate">
-                            {station.stationName}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{station.stationId}</span>
-                            {station.distance && (
-                              <>
-                                <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
-                                <span>{Math.round(station.distance)}m</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon="station"
-                  title={stationSearchKeyword ? "검색 결과가 없습니다" : "주변 정류장이 없습니다"}
-                  description={stationSearchKeyword ? "다른 이름으로 검색해보세요" : "지도를 이동하여 다른 지역을 확인해보세요"}
-                />
-              )}
+      {/* Selected Station Detail */}
+      {selectedStation && (
+        <div className="animate-slide-up pt-4">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setSelectedStation(null)}
+              className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex-1">
+              <h3 className="font-semibold text-foreground">{selectedStation.stationName}</h3>
+              <p className="text-xs text-muted-foreground">{selectedStation.stationId}</p>
             </div>
-          )}
+            <button
+              onClick={handleRefreshStation}
+              disabled={routesLoading || arrivalsLoading}
+              className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              aria-label="새로고침"
+            >
+              {routesLoading || arrivalsLoading ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+            </button>
+          </div>
 
-          {/* Selected Station Detail */}
-          {selectedStation && (
-            <div className="animate-slide-up pt-4">
-              <div className="flex items-center gap-3 mb-4">
-                <button
-                  onClick={() => setSelectedStation(null)}
-                  className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">{selectedStation.stationName}</h3>
-                  <p className="text-xs text-muted-foreground">{selectedStation.stationId}</p>
-                </div>
-                <button
-                  onClick={handleRefreshStation}
-                  disabled={routesLoading || arrivalsLoading}
-                  className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-                  aria-label="새로고침"
-                >
-                  {routesLoading || arrivalsLoading ? (
-                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+          {/* Climate Filter for Station Routes */}
+          <div className="mb-3">
+            <QuickActions
+              onNearbyClick={handleNearbyClick}
+              onClimateOnlyClick={() => setClimateOnly(!climateOnly)}
+              climateOnly={climateOnly}
+              isLoadingLocation={isLoadingLocation}
+            />
+          </div>
 
-              {/* Climate Filter for Station Routes */}
-              <div className="mb-3">
-                <QuickActions
-                  onNearbyClick={handleNearbyClick}
-                  onClimateOnlyClick={() => setClimateOnly(!climateOnly)}
-                  climateOnly={climateOnly}
-                  isLoadingLocation={isLoadingLocation}
-                />
-              </div>
-
-              {routesLoading ? (
-                <div className="space-y-2">
-                  <RouteCardSkeleton />
-                  <RouteCardSkeleton />
-                  <RouteCardSkeleton />
-                </div>
-              ) : sortedFilteredRoutes.length > 0 ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-muted-foreground">
-                      경유 노선
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex bg-secondary rounded-md p-0.5">
-                        <button
-                          onClick={() => setSortBy('arrivalTime')}
-                          className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-                            sortBy === 'arrivalTime'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          도착시간순
-                        </button>
-                        <button
-                          onClick={() => setSortBy('routeOrder')}
-                          className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
-                            sortBy === 'routeOrder'
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          노선순서순
-                        </button>
-                      </div>
-                      <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                        {sortedFilteredRoutes.length}개
-                      </span>
-                    </div>
+          {routesLoading ? (
+            <div className="space-y-2">
+              <RouteCardSkeleton />
+              <RouteCardSkeleton />
+              <RouteCardSkeleton />
+            </div>
+          ) : sortedFilteredRoutes.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-muted-foreground">
+                  경유 노선
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex bg-secondary rounded-md p-0.5">
+                    <button
+                      onClick={() => setSortBy('arrivalTime')}
+                      className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${sortBy === 'arrivalTime'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                      도착시간순
+                    </button>
+                    <button
+                      onClick={() => setSortBy('routeOrder')}
+                      className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${sortBy === 'routeOrder'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                      노선순서순
+                    </button>
                   </div>
-                  {sortedFilteredRoutes.map(route => {
-                    const arrival = arrivals.find(a => a.routeId === route.routeId);
-                    // "곧 도착" 체크
-                    const isArriving = arrival && (
-                      arrival.arrmsg1?.includes('곧 도착') ||
-                      arrival.arrmsg2?.includes('곧 도착')
-                    );
-                    return (
-                      <Card
-                        key={route.routeId}
-                        highlighted={route.climateCardEligible}
-                        className={`p-3 ${isArriving ? 'animate-pulse-arriving' : ''}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <RouteBadge routeName={route.routeName} routeType={route.routeType} size="sm" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs text-muted-foreground">{getRouteTypeName(route.routeType)}</div>
-                            <ClimateEligibilityBadge eligible={route.climateCardEligible} />
-                          </div>
+                  <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
+                    {sortedFilteredRoutes.length}개
+                  </span>
+                </div>
+              </div>
+              {sortedFilteredRoutes.map(route => {
+                const arrival = arrivals.find(a => a.routeId === route.routeId);
+                // "곧 도착" 체크
+                const isArriving = arrival && (
+                  arrival.arrmsg1?.includes('곧 도착') ||
+                  arrival.arrmsg2?.includes('곧 도착')
+                );
+                return (
+                  <Card
+                    key={route.routeId}
+                    highlighted={route.climateCardEligible}
+                    className={`p-3 ${isArriving ? 'animate-pulse-arriving' : ''}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RouteBadge routeName={route.routeName} routeType={route.routeType} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground">{getRouteTypeName(route.routeType)}</div>
+                        <ClimateEligibilityBadge eligible={route.climateCardEligible} />
+                      </div>
 
-                          {/* Arrival Info - 오른쪽에 배치 */}
-                          {arrivalsLoading ? (
-                            <div className="skeleton h-8 w-20 rounded" />
-                          ) : arrival ? (
-                            <div className="flex flex-col gap-1 text-right min-w-0">
-                              {arrival.arrmsg1 ? (
-                                <div className="flex items-center gap-1.5 justify-end">
-                                  <span className={getArrivalTextClass(arrival.traTime1, arrival.arrmsg1)}>
-                                    {formatArrivalMessage(arrival.arrmsg1)}
-                                  </span>
-                                  {arrival.isLast1 === '1' && (
-                                    <span className="text-destructive text-[10px] font-extrabold bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">막차</span>
-                                  )}
-                                </div>
-                              ) : null}
-                              {arrival.arrmsg2 ? (
-                                <div className="flex items-center gap-1.5 justify-end">
-                                  <span className={getArrivalTextClass(arrival.traTime2, arrival.arrmsg2)}>
-                                    {formatArrivalMessage(arrival.arrmsg2)}
-                                  </span>
-                                  {arrival.isLast2 === '1' && (
-                                    <span className="text-destructive text-[10px] font-extrabold bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">막차</span>
-                                  )}
-                                </div>
-                              ) : null}
-                              {!arrival.arrmsg1 && !arrival.arrmsg2 && (
-                                <span className="text-[11px] text-muted-foreground">정보없음</span>
+                      {/* Arrival Info - 오른쪽에 배치 */}
+                      {arrivalsLoading ? (
+                        <div className="skeleton h-8 w-20 rounded" />
+                      ) : arrival ? (
+                        <div className="flex flex-col gap-1 text-right min-w-0">
+                          {arrival.arrmsg1 ? (
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <span className={getArrivalTextClass(arrival.traTime1, arrival.arrmsg1)}>
+                                {formatArrivalMessage(arrival.arrmsg1)}
+                              </span>
+                              {arrival.isLast1 === '1' && (
+                                <span className="text-destructive text-[10px] font-extrabold bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">막차</span>
                               )}
                             </div>
                           ) : null}
+                          {arrival.arrmsg2 ? (
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <span className={getArrivalTextClass(arrival.traTime2, arrival.arrmsg2)}>
+                                {formatArrivalMessage(arrival.arrmsg2)}
+                              </span>
+                              {arrival.isLast2 === '1' && (
+                                <span className="text-destructive text-[10px] font-extrabold bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">막차</span>
+                              )}
+                            </div>
+                          ) : null}
+                          {!arrival.arrmsg1 && !arrival.arrmsg2 && (
+                            <span className="text-[11px] text-muted-foreground">정보없음</span>
+                          )}
                         </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              ) : climateOnly ? (
-                <EmptyState
-                  icon="route"
-                  title="기후동행카드 노선이 없습니다"
-                  description="필터를 해제하면 모든 노선을 볼 수 있어요"
-                />
-              ) : (
-                <EmptyState
-                  icon="route"
-                  title="경유 노선이 없습니다"
-                  description="이 정류장에는 정차하는 노선이 없어요"
-                />
-              )}
+                      ) : null}
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
+          ) : climateOnly ? (
+            <EmptyState
+              icon="route"
+              title="기후동행카드 노선이 없습니다"
+              description="필터를 해제하면 모든 노선을 볼 수 있어요"
+            />
+          ) : (
+            <EmptyState
+              icon="route"
+              title="경유 노선이 없습니다"
+              description="이 정류장에는 정차하는 노선이 없어요"
+            />
           )}
+        </div>
+      )}
 
-          {/* Selected Route Detail */}
-          {selectedRoute && (
-            <div className="animate-slide-up pt-4">
-              <div className="flex items-center gap-3 mb-4">
-                <button
-                  onClick={() => setSelectedRoute(null)}
-                  className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <div className="flex-1 flex items-center gap-3">
-                  <RouteBadge routeName={selectedRoute.routeName} routeType={selectedRoute.routeType} />
-                  <div>
-                    <h3 className="font-semibold text-foreground">{getRouteTypeName(selectedRoute.routeType)}</h3>
-                    <ClimateEligibilityBadge eligible={selectedRoute.climateCardEligible} />
-                  </div>
-                </div>
+      {/* Selected Route Detail */}
+      {selectedRoute && (
+        <div className="animate-slide-up pt-4">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setSelectedRoute(null)}
+              className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex-1 flex items-center gap-3">
+              <RouteBadge routeName={selectedRoute.routeName} routeType={selectedRoute.routeType} />
+              <div>
+                <h3 className="font-semibold text-foreground">{getRouteTypeName(selectedRoute.routeType)}</h3>
+                <ClimateEligibilityBadge eligible={selectedRoute.climateCardEligible} />
               </div>
-
-              {routeStationsLoading ? (
-                <div className="space-y-2">
-                  <StationCardSkeleton />
-                  <StationCardSkeleton />
-                  <StationCardSkeleton />
-                </div>
-              ) : routeStations.length > 0 ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-muted-foreground">
-                      경유 정류장
-                    </p>
-                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
-                      {routeStations.length}개
-                    </span>
-                  </div>
-                  {routeStations.map((station, index) => (
-                    <Card
-                      key={station.stationId}
-                      interactive
-                      onClick={() => handleStationClick(station)}
-                      className="p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-primary">{index + 1}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-foreground truncate">
-                            {station.stationName}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {station.stationId}
-                          </div>
-                        </div>
-                        <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon="station"
-                  title="정류장 정보가 없습니다"
-                  description="이 노선의 정류장 정보를 불러올 수 없어요"
-                />
-              )}
             </div>
+          </div>
+
+          {routeStationsLoading ? (
+            <div className="space-y-2">
+              <StationCardSkeleton />
+              <StationCardSkeleton />
+              <StationCardSkeleton />
+            </div>
+          ) : routeStations.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-muted-foreground">
+                  경유 정류장
+                </p>
+                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md">
+                  {routeStations.length}개
+                </span>
+              </div>
+              {routeStations.map((station, index) => (
+                <Card
+                  key={station.stationId}
+                  interactive
+                  onClick={() => handleStationClick(station)}
+                  className="p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-primary">{index + 1}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-foreground truncate">
+                        {station.stationName}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {station.stationId}
+                      </div>
+                    </div>
+                    <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon="station"
+              title="정류장 정보가 없습니다"
+              description="이 노선의 정류장 정보를 불러올 수 없어요"
+            />
           )}
+        </div>
+      )}
     </div>
   );
 
