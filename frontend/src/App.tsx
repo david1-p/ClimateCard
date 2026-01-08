@@ -364,7 +364,7 @@ function App() {
 
   const handleOpenChat = () => {
     // 카카오톡 오픈챗 URL (환경변수로 설정 가능)
-    const openChatUrl = import.meta.env.VITE_KAKAO_OPENCHAT_URL || 'https://open.kakao.com/o/sMFxZ48h ';
+    const openChatUrl = import.meta.env.VITE_KAKAO_OPENCHAT_URL || 'https://open.kakao.com/o/sMFxZ48h';
     window.open(openChatUrl, '_blank');
   };
 
