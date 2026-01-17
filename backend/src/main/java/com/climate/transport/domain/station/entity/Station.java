@@ -44,6 +44,10 @@ public class Station {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "display_id", length = 10)
+    @Comment("표시용 정류소 ID (5자리)")
+    private String displayId;
+
     public Station(String stationId, String stationName, Point location, String stationType, String mobileNumber) {
         this.stationId = stationId;
         this.stationName = stationName;
@@ -51,5 +55,9 @@ public class Station {
         this.stationType = stationType;
         this.mobileNumber = mobileNumber;
         this.createdAt = LocalDateTime.now();
+    }
+
+    public void setDisplayId(String displayId) {
+        this.displayId = displayId;
     }
 }

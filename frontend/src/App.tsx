@@ -518,7 +518,7 @@ function App() {
                         {station.stationName}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{station.stationId}</span>
+                        <span>{station.displayId || station.stationId}</span>
                         {station.distance && (
                           <>
                             <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
@@ -558,7 +558,7 @@ function App() {
             </button>
             <div className="flex-1">
               <h3 className="font-semibold text-foreground">{selectedStation.stationName}</h3>
-              <p className="text-xs text-muted-foreground">{selectedStation.stationId}</p>
+              <p className="text-xs text-muted-foreground">{selectedStation.displayId || selectedStation.stationId}</p>
             </div>
             <button
               onClick={handleRefreshStation}
@@ -605,8 +605,8 @@ function App() {
                     <button
                       onClick={() => setSortBy('arrivalTime')}
                       className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${sortBy === 'arrivalTime'
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
                       도착시간순
@@ -614,8 +614,8 @@ function App() {
                     <button
                       onClick={() => setSortBy('routeOrder')}
                       className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${sortBy === 'routeOrder'
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
                       노선순서순
@@ -750,7 +750,7 @@ function App() {
                         {station.stationName}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {station.stationId}
+                        {station.displayId || station.stationId}
                       </div>
                     </div>
                     <svg className="w-4 h-4 text-muted-foreground shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

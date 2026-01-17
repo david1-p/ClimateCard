@@ -14,16 +14,18 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StationResponse {
     private String stationId;
+    private String displayId; // 표시용 ID (5자리)
     private String stationName;
     private double latitude;
     private double longitude;
-    private String stationType;  // 사용하지 않음 - JSON 응답에서 제외됨
+    private String stationType; // 사용하지 않음 - JSON 응답에서 제외됨
     private String mobileNumber; // 사용하지 않음 - JSON 응답에서 제외됨
     private Double distance; // 사용자와의 거리 (미터) - Double로 변경하여 null 가능
 
     public static StationResponse from(Station station, double distance) {
         return StationResponse.builder()
                 .stationId(station.getStationId())
+                .displayId(station.getDisplayId())
                 .stationName(station.getStationName())
                 .latitude(station.getLocation().getY())
                 .longitude(station.getLocation().getX())
@@ -35,6 +37,7 @@ public class StationResponse {
     public static StationResponse from(Station station) {
         return StationResponse.builder()
                 .stationId(station.getStationId())
+                .displayId(station.getDisplayId())
                 .stationName(station.getStationName())
                 .latitude(station.getLocation().getY())
                 .longitude(station.getLocation().getX())

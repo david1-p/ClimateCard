@@ -1,5 +1,6 @@
 export interface Station {
     stationId: string;
+    displayId: string | null;  // 표시용 ID (5자리)
     stationName: string;
     latitude: number;
     longitude: number;
