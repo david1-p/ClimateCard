@@ -2,17 +2,25 @@
 
 서울시 버스/지하철 노선의 기후동행카드 적용 여부를 실시간으로 조회할 수 있는 웹 서비스
 
+> [!NOTE]
+> **프로젝트 상태: 개발 완료 / 운영 서버 종료**
+>
+> 이 프로젝트는 기후동행카드 적용 버스와 주변 정류장을 안내하기 위해 개발한 개인 프로젝트입니다.
+> 현재 운영 서버는 종료되었으며, 소스 코드와 시스템 설계는 포트폴리오 및 기술 기록 목적으로 공개하고 있습니다.
+>
+> 로컬 실행 시 PostgreSQL, PostGIS, Redis와 공공데이터 API 키를 별도로 설정해야 합니다.
+
 ## 🎯 프로젝트 개요
 
 - **목적**: GPS 기반으로 주변 정류소의 기후동행카드 적용 버스 조회
-- **기술 스택**: Java 25, Spring Boot 3.3, React 18, PostgreSQL + PostGIS, Redis
+- **기술 스택**: Java 21, Spring Boot 3.4, React 19, PostgreSQL + PostGIS, Redis
 - **특징**: Virtual Threads를 활용한 고성능 병렬 API 처리
 
 ## 🛠️ 기술 스택
 
 ### Backend
-- **Java 25 LTS**: Virtual Threads, Structured Concurrency 활용
-- **Spring Boot 3.3.5**: 최신 엔터프라이즈 프레임워크
+- **Java 21 LTS**: Virtual Threads, Structured Concurrency 활용
+- **Spring Boot 3.3**: 최신 엔터프라이즈 프레임워크
 - **JPA & QueryDSL**: 생산성 높은 ORM
 - **Flyway**: 데이터베이스 스키마 버전 관리
 - **Guava**: API Rate Limiting
@@ -22,15 +30,15 @@
 - **Redis 7**: API 응답 캐싱 (TTL 설정 최적화)
 
 ### Frontend
-- **React 18**: 컴포넌트 기반 UI
+- **React 19**: 컴포넌트 기반 UI
 - **TypeScript**: 정적 타입 분석
 - **Kakao Map API**: 지도 및 위치 정보 시각화
 - **Vite**: 초고속 빌드 도구
 
 ### Infrastructure
-- **Docker Compose**: 전체 서비스 컨테이너 오케스트레이션
-- **Nginx**: 리버스 프록시 및 정적 파일 서빙
-- **Vultr Server**: 2 Core / 4GB RAM 환경 최적화
+- **Docker Compose**: Spring Boot, PostgreSQL/PostGIS, Redis 실행 환경 구성
+- **Nginx**: 리버스 프록시와 정적 파일 서빙
+- **VPS 배포 경험**: Docker Compose 기반으로 실제 서버에 배포했으며, 현재 운영 서버는 종료
 
 ---
 
