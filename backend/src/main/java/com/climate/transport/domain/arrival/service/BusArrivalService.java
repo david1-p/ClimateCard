@@ -10,11 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 
-import javax.net.ssl.*;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,42 +29,16 @@ public class BusArrivalService {
     // bus.go.kr 버스 도착 정보 조회 API
     private static final String ARRIVAL_API_URL = "https://bus.go.kr/sbus/bus/selectBusArrive.do";
 
-    public BusArrivalService(StationRepository stationRepository, RouteRepository routeRepository) {
+    public BusArrivalService(StationRepository stationRepository, 
+                             RouteRepository routeRepository, 
+                             RestTemplateBuilder restTemplateBuilder
+    ) {
         this.stationRepository = stationRepository;
         this.routeRepository = routeRepository;
-        this.restTemplate = createRestTemplate();
-    }
-
-    /**
-     * SSL 인증서 검증을 비활성화한 RestTemplate 생성
-     * bus.go.kr의 SSL 인증서 문제를 우회하기 위함
-     */
-    private RestTemplate createRestTemplate() {
-        try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        public X509Certificate[] getAcceptedIssuers() {
-                            return null;
-                        }
-                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                        }
-                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                        }
-                    }
-            };
-
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-
-            HostnameVerifier allHostsValid = (hostname, session) -> true;
-            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-
-            return new RestTemplate();
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            log.error("Failed to create RestTemplate with SSL bypass: {}", e.getMessage());
-            return new RestTemplate();
-        }
+        this.restTemplate = restTemplateBuilder
+            .connectTimeout(Duration.ofSeconds(5))
+            .readTimeout(Duration.ofSeconds(10))
+            .build();
     }
 
     public List<BusArrivalResponse> getArrivalInfo(String stationId) {
